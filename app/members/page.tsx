@@ -55,7 +55,7 @@ export default function MembersPage() {
         const matchesSearch =
           m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           m.phone.includes(searchQuery) ||
-          m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (m.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
           m.fitness_goal.toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesStatus =
@@ -94,7 +94,7 @@ export default function MembersPage() {
     const rows = filteredMembers.map((m) => [
       m.id,
       `"${m.full_name}"`,
-      m.email,
+      m.email || "",
       m.phone,
       m.gender || "N/A",
       `"${m.fitness_goal}"`,
@@ -126,7 +126,10 @@ export default function MembersPage() {
   const handleMemberAdded = (formData: any) => {
     const newMember: Member = {
       id: `mem_${Date.now()}`,
-      trainer_id: "trainer_alex_01",
+      trainer_id: "trainer_fitcore_01",
+      role: "member",
+      experience_level: "intermediate",
+      payment_status: "paid",
       full_name: formData.fullName,
       email: formData.email,
       phone: formData.phone,

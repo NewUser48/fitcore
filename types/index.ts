@@ -1,4 +1,6 @@
-// Domain types for the Gym Trainer Management System
+// FITCORE Domain Models & Interfaces
+
+export type UserRole = "trainer" | "member";
 
 export type MembershipStatus = "active" | "expiring" | "expired" | "inactive" | "pending";
 
@@ -11,85 +13,130 @@ export type FitnessGoal =
   | "General Fitness";
 
 export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+export type ExperienceLevel = "beginner" | "intermediate" | "advanced" | "elite";
 
-export interface Member {
-  id: string;
+export interface MemberProfile {
+  id: string; // Auth User ID
   trainer_id: string;
+  role: "member";
   full_name: string;
-  avatar_url?: string | null;
-  email: string;
-  phone: string;
+  phone: string; // E.164 normalized, e.g. "+919876543210"
+  email?: string;
   date_of_birth?: string;
   gender?: Gender;
+  address?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+
+  // Fitness details
   height_cm: number;
   starting_weight_kg: number;
   current_weight_kg: number;
   target_weight_kg?: number;
   fitness_goal: FitnessGoal;
+  experience_level: ExperienceLevel;
   joining_date: string;
-  membership_start_date: string;
-  membership_end_date: string;
-  membership_plan_id?: string;
-  membership_plan_name?: string;
-  membership_status: MembershipStatus;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
+  medical_limitations?: string;
   medical_notes?: string;
   trainer_notes?: string;
+
+  // Membership
+  membership_plan_name: string;
+  membership_start_date: string;
+  membership_end_date: string;
+  membership_fee?: number;
+  payment_status: "paid" | "partial" | "pending" | "overdue";
+  membership_status: MembershipStatus;
+  pending_dues: number;
+  attendance_rate?: number;
   total_sessions_attended?: number;
-  attendance_rate?: number; // e.g. 88%
-  pending_dues?: number;
+
+  // Auth & Security status
+  requires_password_change?: boolean;
+  avatar_url?: string;
   created_at: string;
   updated_at?: string;
 }
 
-export type PlanDurationType = "monthly" | "quarterly" | "half_yearly" | "annual" | "custom";
+export type Member = MemberProfile;
+export type InAppNotification = {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  is_read: boolean;
+  created_at: string;
+  member_id?: string;
+};
+export type DashboardMetrics = any;
 
-export interface MembershipPlan {
+export type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
+
+export interface ExerciseItem {
   id: string;
   name: string;
-  duration_type: PlanDurationType;
-  duration_days: number;
-  price: number;
-  currency: string;
-  description?: string;
-  features: string[];
-  is_active: boolean;
-  member_count?: number;
-  created_at: string;
+  target_muscle: string;
+  sets: number;
+  reps: string; // e.g. "8-10" or "12"
+  weight_target?: string; // e.g. "120 kg" or "30 kg DBs"
+  rest_seconds: number;
+  instructions: string;
+  video_url?: string;
+  is_completed?: boolean;
 }
 
-export type PaymentStatus = "paid" | "partial" | "pending" | "overdue";
-export type PaymentMethod = "UPI" | "Cash" | "Bank Transfer" | "Credit/Debit Card" | "Cheque";
-
-export interface PaymentRecord {
-  id: string;
-  member_id: string;
-  member_name: string;
-  member_avatar?: string;
-  amount: number;
-  paid_amount: number;
-  currency: string;
-  status: PaymentStatus;
-  payment_method: PaymentMethod;
-  invoice_number: string;
-  payment_date: string;
-  due_date?: string;
-  notes?: string;
-  receipt_url?: string;
+export interface DayWorkoutPlan {
+  day: DayOfWeek;
+  workout_name: string; // e.g. "Chest & Triceps" or "Rest Day"
+  is_rest_day: boolean;
+  estimated_duration_min: number;
+  focus: string;
+  exercises: ExerciseItem[];
 }
 
-export type AttendanceStatus = "present" | "absent" | "late" | "excused";
-
-export interface AttendanceRecord {
+export interface MealItem {
   id: string;
-  member_id: string;
-  member_name: string;
-  member_avatar?: string;
-  date: string;
-  check_in_time?: string;
-  status: AttendanceStatus;
-  notes?: string;
+  meal_type: "Breakfast" | "Morning Snack" | "Lunch" | "Evening Snack" | "Dinner";
+  timing: string; // e.g. "08:30 AM"
+  foods: string;
+  quantity: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  trainer_notes?: string;
+  is_completed?: boolean;
+}
+
+export interface DayDietPlan {
+  day: DayOfWeek;
+  daily_calories_target: number;
+  protein_target_g: number;
+  carbs_target_g: number;
+  fats_target_g: number;
+  water_target_liters: number;
+  meals: MealItem[];
+  instructions?: string;
+}
+
+export interface TrainerProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  gym_name: string;
+  specialization: string;
+  currency: string;
+  avatar_url: string;
+  experience_years?: number;
+  role: "trainer";
 }
 
 export interface TrainingSession {
@@ -98,118 +145,34 @@ export interface TrainingSession {
   member_name: string;
   member_avatar?: string;
   title: string;
-  date: string; // YYYY-MM-DD
-  start_time: string; // HH:mm
-  end_time: string; // HH:mm
-  focus_area: string;
+  focus_area?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
   status: "scheduled" | "completed" | "cancelled" | "in_progress";
   notes?: string;
 }
 
-export interface ExerciseItem {
-  id: string;
-  name: string;
-  target_muscle: string;
-  sets: number;
-  reps: string; // e.g. "8-12" or "10"
-  rest_seconds: number;
-  instructions?: string;
-  video_url?: string;
-}
-
-export interface WorkoutPlan {
+export interface PaymentRecord {
   id: string;
   member_id: string;
-  member_name?: string;
-  title: string;
-  description?: string;
-  split_days: {
-    day_name: string; // "Monday", "Tuesday", etc.
-    focus: string; // "Chest & Triceps"
-    exercises: ExerciseItem[];
-  }[];
-  active: boolean;
-  assigned_date: string;
-}
-
-export interface DietMeal {
-  id: string;
-  meal_name: string; // "Breakfast", "Lunch", "Pre-Workout"
-  timing: string; // "08:30 AM"
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fats_g: number;
-  food_items: string;
-  trainer_tips?: string;
-}
-
-export interface DietPlan {
-  id: string;
-  member_id: string;
-  member_name?: string;
-  title: string;
-  daily_calories_target: number;
-  protein_target_g: number;
-  carbs_target_g: number;
-  fats_target_g: number;
-  hydration_target_liters: number;
-  meals: DietMeal[];
-  assigned_date: string;
-  trainer_notes?: string;
-}
-
-export interface ProgressRecord {
-  id: string;
-  member_id: string;
-  recorded_date: string;
-  weight_kg: number;
-  body_fat_percentage?: number;
-  chest_cm?: number;
-  waist_cm?: number;
-  arms_cm?: number;
-  hips_cm?: number;
-  thighs_cm?: number;
-  notes?: string;
-  front_photo_url?: string;
-  side_photo_url?: string;
-  back_photo_url?: string;
-}
-
-export interface InAppNotification {
-  id: string;
-  title: string;
-  message: string;
-  type: "expiring_membership" | "overdue_payment" | "upcoming_session" | "attendance_alert" | "milestone";
-  is_read: boolean;
-  created_at: string;
-  member_id?: string;
-  action_url?: string;
-}
-
-export interface TrainerProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  specialization: string;
-  certifications: string[];
-  gym_name: string;
-  avatar_url: string;
+  member_name: string;
+  amount: number;
+  paid_amount: number;
   currency: string;
-  experience_years: number;
+  status: "paid" | "partial" | "pending" | "overdue";
+  payment_method: "UPI" | "Cash" | "Bank Transfer" | "Card";
+  invoice_number: string;
+  payment_date: string;
+  due_date?: string;
+  notes?: string;
 }
 
-export interface DashboardMetrics {
-  totalMembers: number;
-  activeMembers: number;
-  expiringMemberships: number;
-  monthlyRevenue: number;
-  todayAttendance: {
-    present: number;
-    totalExpected: number;
-    percentage: number;
-  };
-  pendingPaymentsTotal: number;
-  pendingPaymentsCount: number;
+export interface MemberCredentialsHandover {
+  member_name: string;
+  phone: string;
+  temp_password: string;
+  plan_name: string;
+  portal_url: string;
+  created_at: string;
 }
