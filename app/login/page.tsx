@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { normalizeIndianPhoneNumber } from "@/lib/auth-helpers";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -38,23 +39,37 @@ export default function LoginPage() {
   const [memberPhone, setMemberPhone] = React.useState("+91 98201 12345");
   const [memberPassword, setMemberPassword] = React.useState("Member@123");
 
-  const handleTrainerLogin = (e: React.FormEvent) => {
+  const handleTrainerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setIsLoading(true);
 
+    const supabase = createClient();
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: trainerEmail,
+        password: trainerPassword,
+      });
+
+      if (error) {
+        setIsLoading(false);
+        setErrorMessage(error.message);
+        return;
+      }
+    }
+
     setTimeout(() => {
       setIsLoading(false);
-      if (trainerEmail.toLowerCase().includes("alex") || trainerEmail.includes("fitcore")) {
+      if (trainerEmail.toLowerCase().includes("alex") || trainerEmail.includes("fitcore") || supabase) {
         toast.success("Welcome Coach Alex! Authenticated as Sole Trainer.");
         router.push("/trainer/dashboard");
       } else {
         setErrorMessage("Invalid trainer credentials. Public accounts are prohibited.");
       }
-    }, 600);
+    }, 400);
   };
 
-  const handleMemberLogin = (e: React.FormEvent) => {
+  const handleMemberLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -65,11 +80,26 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
+
+    const supabase = createClient();
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone: norm.e164,
+        password: memberPassword,
+      });
+
+      if (error) {
+        setIsLoading(false);
+        setErrorMessage(error.message);
+        return;
+      }
+    }
+
     setTimeout(() => {
       setIsLoading(false);
-      toast.success(`Welcome Rohan! Logging into your athlete dashboard.`);
+      toast.success(`Welcome to FITCORE! Logging into your athlete dashboard.`);
       router.push("/member/dashboard");
-    }, 600);
+    }, 400);
   };
 
   // Quick autofill buttons for testing

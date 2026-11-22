@@ -46,6 +46,15 @@ export function normalizeIndianPhoneNumber(input: string): {
   };
 }
 
+export function isValidIndianPhone(input: string): boolean {
+  return normalizeIndianPhoneNumber(input).isValid;
+}
+
+export function normalizeIndianPhone(input: string): string {
+  const res = normalizeIndianPhoneNumber(input);
+  return res.isValid ? res.e164 : input;
+}
+
 /**
  * Generates an unguessable 12-character strong temporary password
  * for initial member handover.

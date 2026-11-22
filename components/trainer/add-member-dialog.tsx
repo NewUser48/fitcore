@@ -106,7 +106,7 @@ Please change your password after logging in.`;
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const phoneNorm = normalizeIndianPhoneNumber(formData.phone);
@@ -118,11 +118,41 @@ Please change your password after logging in.`;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Call Supabase Server Admin API to create auth credentials & DB records
+      const res = await fetch("/api/trainer/members/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: formData.fullName,
+          phone: phoneNorm.e164,
+          email: formData.email,
+          date_of_birth: formData.dob,
+          gender: formData.gender,
+          address: formData.address,
+          emergency_contact: `${formData.emergencyName} (${formData.emergencyPhone})`,
+          height_cm: formData.heightCm,
+          weight_kg: formData.startingWeightKg,
+          target_weight_kg: formData.targetWeightKg,
+          fitness_goal: formData.fitnessGoal,
+          experience_level: formData.experienceLevel,
+          medical_notes: formData.medicalLimitations,
+          membership_plan: formData.membershipPlan,
+          membership_fee: formData.membershipFee,
+          payment_status: formData.paymentStatus,
+          start_date: formData.startDate,
+          end_date: formData.endDate,
+          temporary_password: formData.tempPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create member");
+      }
 
       const newMember: MemberProfile = {
-        id: `mem_${Date.now()}`,
+        id: data.member?.id || `mem_${Date.now()}`,
         trainer_id: "trainer_fitcore_01",
         role: "member",
         full_name: formData.fullName,
@@ -163,7 +193,13 @@ Please change your password after logging in.`;
       if (onMemberCreated) {
         onMemberCreated(newMember);
       }
-    }, 800);
+
+      toast.success(`Athlete account created for ${formData.fullName}!`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to register member.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFinish = () => {
