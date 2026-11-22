@@ -89,6 +89,12 @@ export const navigationItems = [
     badge: undefined,
   },
   {
+    name: "Member Portal",
+    href: "/portal",
+    icon: ShieldCheck,
+    badge: "Live",
+  },
+  {
     name: "Settings",
     href: "/settings",
     icon: Settings,
