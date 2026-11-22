@@ -84,8 +84,8 @@ export interface ExerciseItem {
   name: string;
   target_muscle: string;
   sets: number;
-  reps: string; // e.g. "8-10" or "12"
-  weight_target?: string; // e.g. "120 kg" or "30 kg DBs"
+  reps: string;
+  weight_target?: string;
   rest_seconds: number;
   instructions: string;
   video_url?: string;
@@ -94,35 +94,36 @@ export interface ExerciseItem {
 
 export interface DayWorkoutPlan {
   day: DayOfWeek;
-  workout_name: string; // e.g. "Chest & Triceps" or "Rest Day"
+  workout_name: string; // e.g. "Chest & Triceps"
   is_rest_day: boolean;
-  estimated_duration_min: number;
-  focus: string;
-  exercises: ExerciseItem[];
+  estimated_duration_min?: number;
+  focus?: string;
+  workout_note: string; // Simplified routine note as requested
+  exercises?: ExerciseItem[];
 }
 
 export interface MealItem {
   id: string;
-  meal_type: "Breakfast" | "Morning Snack" | "Lunch" | "Evening Snack" | "Dinner";
-  timing: string; // e.g. "08:30 AM"
+  meal_type: string;
+  timing: string;
   foods: string;
-  quantity: string;
   calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fats_g: number;
-  trainer_notes?: string;
+  protein_g?: number;
+  carbs_g?: number;
+  fats_g?: number;
   is_completed?: boolean;
 }
 
 export interface DayDietPlan {
   day: DayOfWeek;
-  daily_calories_target: number;
-  protein_target_g: number;
-  carbs_target_g: number;
-  fats_target_g: number;
-  water_target_liters: number;
-  meals: MealItem[];
+  diet_title?: string;
+  daily_calories_target?: number;
+  protein_target_g?: number;
+  carbs_target_g?: number;
+  fats_target_g?: number;
+  water_target_liters?: number;
+  diet_note: string; // Simplified nutrition & meal note as requested
+  meals?: MealItem[];
   instructions?: string;
 }
 

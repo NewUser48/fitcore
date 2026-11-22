@@ -5,34 +5,28 @@ import { MemberShell } from "@/components/member/member-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
 import {
   sampleWeeklyWorkouts,
   sampleWeeklyDiet,
   fitcoreMembers,
   fitcoreTrainer,
-  sampleSessions,
 } from "@/lib/mock-data";
-import { DayOfWeek, ExerciseItem } from "@/types";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { DayOfWeek } from "@/types";
+import { formatDate } from "@/lib/utils";
 import {
   Flame,
   Dumbbell,
   UtensilsCrossed,
   CheckCircle2,
   Clock,
-  PlayCircle,
   TrendingUp,
-  Scale,
   Calendar,
   CreditCard,
   Droplets,
   Trophy,
   Sparkles,
   ArrowRight,
-  Download,
-  AlertCircle,
-  ExternalLink,
+  FileText,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -61,22 +55,10 @@ export default function MemberDashboardPage() {
 
   // Day-by-Day calendar selection (defaults to Monday / current day)
   const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>("Monday");
-
-  // State for exercise completion
-  const [completedExercises, setCompletedExercises] = React.useState<Record<string, boolean>>({
-    m_1: true,
-  });
-
-  // State for meal completion
-  const [completedMeals, setCompletedMeals] = React.useState<Record<string, boolean>>({
-    d_m_1: true,
-  });
+  const [workoutCompleted, setWorkoutCompleted] = React.useState(false);
 
   // State for hydration
   const [waterGlasses, setWaterGlasses] = React.useState(7);
-
-  // Video modal
-  const [activeVideo, setActiveVideo] = React.useState<{ title: string; url: string } | null>(null);
 
   // Rest timer
   const [restTimer, setRestTimer] = React.useState<number | null>(null);
@@ -99,24 +81,9 @@ export default function MemberDashboardPage() {
   const currentDiet =
     sampleWeeklyDiet.find((d) => d.day === selectedDay) || sampleWeeklyDiet[0];
 
-  const handleToggleExercise = (id: string, name: string) => {
-    setCompletedExercises((prev) => {
-      const next = !prev[id];
-      if (next) toast.success(`Completed: ${name}`);
-      return { ...prev, [id]: next };
-    });
-  };
-
-  const handleToggleMeal = (id: string, name: string) => {
-    setCompletedMeals((prev) => {
-      const next = !prev[id];
-      if (next) toast.success(`Tracked: ${name}`);
-      return { ...prev, [id]: next };
-    });
-  };
-
   const handleFinishTodayWorkout = () => {
-    toast.success(`Outstanding effort, ${member.full_name.split(" ")[0]}! Today's session logged in FITCORE.`);
+    setWorkoutCompleted(true);
+    toast.success(`Outstanding effort, ${member.full_name.split(" ")[0]}! ${selectedDay}'s workout logged in FITCORE.`);
   };
 
   const weightData = [
@@ -183,7 +150,7 @@ export default function MemberDashboardPage() {
             Weekly Workout & Nutrition Schedule
           </span>
           <span className="text-[11px] text-primary font-semibold">
-            Day: {selectedDay}
+            Viewing: {selectedDay}
           </span>
         </div>
 
@@ -195,7 +162,10 @@ export default function MemberDashboardPage() {
             return (
               <button
                 key={day}
-                onClick={() => setSelectedDay(day)}
+                onClick={() => {
+                  setSelectedDay(day);
+                  setWorkoutCompleted(false);
+                }}
                 className={`p-3 rounded-2xl border text-left transition-all duration-200 ${
                   isSelected
                     ? "bg-[#1C242D] border-primary shadow-lime-glow-sm text-text-primary"
@@ -211,10 +181,10 @@ export default function MemberDashboardPage() {
                   )}
                 </div>
                 <p className="text-[11px] font-semibold text-text-primary truncate">
-                  {dayWorkout?.workout_name || "Custom"}
+                  {dayWorkout?.workout_name || "Custom Split"}
                 </p>
                 <span className="text-[9px] text-text-dim block mt-0.5">
-                  {dayWorkout?.is_rest_day ? "Rest Day" : `${dayWorkout?.exercises.length || 0} moves`}
+                  {dayWorkout?.is_rest_day ? "Rest Day" : "Training Note"}
                 </span>
               </button>
             );
@@ -222,7 +192,7 @@ export default function MemberDashboardPage() {
         </div>
       </div>
 
-      {/* 3. TODAY'S WORKOUT SECTION */}
+      {/* 3. TODAY'S WORKOUT SECTION (NOTE-BASED ARCHITECTURE) */}
       <Card glowOnHover className="p-6 mb-6 border-primary/40">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border mb-4">
           <div className="flex items-center gap-3">
@@ -232,15 +202,16 @@ export default function MemberDashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                  {selectedDay}&apos;s Routine
+                  {selectedDay}&apos;s Workout Routine
                 </span>
                 {currentWorkout.is_rest_day && <Badge variant="neutral">Rest Day</Badge>}
+                {workoutCompleted && <Badge variant="completed">Completed Today</Badge>}
               </div>
               <h2 className="text-lg font-black text-text-primary">
                 {currentWorkout.workout_name}
               </h2>
               <p className="text-xs text-text-muted mt-0.5">
-                Focus: {currentWorkout.focus} &bull; ~{currentWorkout.estimated_duration_min} mins
+                Focus: {currentWorkout.focus} &bull; Prepared by Coach Alex Vance
               </p>
             </div>
           </div>
@@ -267,104 +238,39 @@ export default function MemberDashboardPage() {
           </div>
         </div>
 
-        {/* Workout Exercises */}
-        {currentWorkout.is_rest_day ? (
-          <div className="py-8 text-center text-xs text-text-muted">
-            <p className="font-bold text-text-primary text-sm mb-1">Rest & Muscle Recovery Day</p>
-            <p>Hydrate well, eat according to your rest-day targets, and sleep 8 hours.</p>
+        {/* Workout Instructions & Note Box */}
+        <div className="p-5 rounded-2xl bg-[#10151B] border border-border/80 mb-5">
+          <div className="flex items-center gap-2 text-xs font-bold text-primary mb-3">
+            <FileText className="h-4 w-4" />
+            <span>Coach Alex&apos;s Routine & Exercise Notes:</span>
           </div>
-        ) : (
-          <div className="space-y-3 mb-6">
-            {currentWorkout.exercises.map((ex, index) => {
-              const isDone = !!completedExercises[ex.id];
 
-              return (
-                <div
-                  key={ex.id}
-                  className={`p-4 rounded-2xl border transition-all duration-200 ${
-                    isDone
-                      ? "bg-[#141C18] border-emerald-500/40"
-                      : "bg-[#151B22] border-border hover:border-primary/40"
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={() => handleToggleExercise(ex.id, ex.name)}
-                        className={`mt-0.5 h-6 w-6 rounded-lg border flex items-center justify-center transition-all ${
-                          isDone
-                            ? "bg-emerald-500 border-emerald-400 text-black shadow-md"
-                            : "border-border bg-[#1C242D] text-text-muted hover:border-primary"
-                        }`}
-                      >
-                        <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
-                      </button>
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4
-                            className={`text-sm font-bold ${
-                              isDone ? "text-emerald-300 line-through" : "text-text-primary"
-                            }`}
-                          >
-                            {index + 1}. {ex.name}
-                          </h4>
-                          <span className="text-[10px] text-text-dim font-mono">
-                            {ex.target_muscle}
-                          </span>
-                        </div>
-                        <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                          <strong>Form cue:</strong> {ex.instructions}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <div className="flex items-center gap-2 text-xs font-mono">
-                        <span className="p-1.5 rounded-lg bg-[#1C242D] border border-border font-bold text-text-primary">
-                          {ex.sets} sets
-                        </span>
-                        <span className="p-1.5 rounded-lg bg-[#1C242D] border border-border font-bold text-text-primary">
-                          {ex.reps} reps
-                        </span>
-                        <span className="p-1.5 rounded-lg bg-[#1C242D] border border-border font-bold text-primary">
-                          {ex.weight_target}
-                        </span>
-                      </div>
-
-                      {ex.video_url && (
-                        <button
-                          onClick={() => setActiveVideo({ title: ex.name, url: ex.video_url! })}
-                          className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
-                          title="Watch demonstration video"
-                        >
-                          <PlayCircle className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          <pre className="text-sm text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
+            {currentWorkout.workout_note || "No specific workout note assigned for this day."}
+          </pre>
+        </div>
 
         {!currentWorkout.is_rest_day && (
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between items-center pt-2 border-t border-border/50">
+            <span className="text-xs text-text-muted">
+              {workoutCompleted ? "Workout logged for today ✓" : "Follow the notes above and log when finished"}
+            </span>
+
             <Button
-              variant="primary"
+              variant={workoutCompleted ? "secondary" : "primary"}
               size="default"
               onClick={handleFinishTodayWorkout}
+              disabled={workoutCompleted}
               className="font-bold shadow-lime-glow"
             >
               <CheckCircle2 className="h-4 w-4 mr-2 stroke-[2.5]" />
-              Complete Today&apos;s Workout
+              {workoutCompleted ? "Completed Today ✓" : "Complete Today's Workout"}
             </Button>
           </div>
         )}
       </Card>
 
-      {/* 4. TODAY'S DIET SECTION */}
+      {/* 4. TODAY'S DIET SECTION (NOTE-BASED ARCHITECTURE) */}
       <Card glowOnHover className="p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border mb-4">
           <div className="flex items-center gap-3">
@@ -373,13 +279,13 @@ export default function MemberDashboardPage() {
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                {selectedDay}&apos;s Nutrition Plan
+                {selectedDay}&apos;s Nutrition Guidance
               </span>
               <h2 className="text-lg font-black text-text-primary">
-                Daily Macro Targets & Meals
+                {currentDiet.diet_title || "Daily Nutrition Plan"}
               </h2>
               <p className="text-xs text-text-muted mt-0.5">
-                Target: {currentDiet.daily_calories_target} kcal &bull; {currentDiet.protein_target_g}g Protein
+                Caloric target: ~{currentDiet.daily_calories_target || 2200} kcal &bull; Coach Alex
               </p>
             </div>
           </div>
@@ -404,57 +310,16 @@ export default function MemberDashboardPage() {
           </div>
         </div>
 
-        {/* Macro Bars */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="p-3 rounded-2xl bg-[#151B22] border border-border text-center">
-            <span className="text-[10px] text-text-muted block">Protein</span>
-            <span className="text-base font-black text-primary font-mono">{currentDiet.protein_target_g}g</span>
+        {/* Diet Instructions & Note Box */}
+        <div className="p-5 rounded-2xl bg-[#10151B] border border-border/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-3">
+            <UtensilsCrossed className="h-4 w-4" />
+            <span>Meals & Nutrition Notes ({selectedDay}):</span>
           </div>
-          <div className="p-3 rounded-2xl bg-[#151B22] border border-border text-center">
-            <span className="text-[10px] text-text-muted block">Carbohydrates</span>
-            <span className="text-base font-black text-sky-400 font-mono">{currentDiet.carbs_target_g}g</span>
-          </div>
-          <div className="p-3 rounded-2xl bg-[#151B22] border border-border text-center">
-            <span className="text-[10px] text-text-muted block">Healthy Fats</span>
-            <span className="text-base font-black text-amber-400 font-mono">{currentDiet.fats_target_g}g</span>
-          </div>
-        </div>
 
-        {/* Meals Timeline */}
-        <div className="space-y-3">
-          {currentDiet.meals.map((meal) => {
-            const isDone = !!completedMeals[meal.id];
-
-            return (
-              <div
-                key={meal.id}
-                className={`p-3.5 rounded-2xl border transition-all ${
-                  isDone
-                    ? "bg-[#141C18] border-emerald-500/40"
-                    : "bg-[#151B22] border-border"
-                }`}
-              >
-                <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-2">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggleMeal(meal.id, meal.meal_type)}
-                      className={`h-5 w-5 rounded border flex items-center justify-center ${
-                        isDone ? "bg-emerald-500 border-emerald-400 text-black" : "border-border bg-[#10151B]"
-                      }`}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="text-xs font-bold text-text-primary">{meal.meal_type}</span>
-                    <span className="text-[10px] text-text-dim font-mono">({meal.timing})</span>
-                  </div>
-
-                  <span className="text-xs font-mono font-bold text-primary">{meal.calories} kcal</span>
-                </div>
-
-                <p className="text-xs text-text-muted pl-7">{meal.foods}</p>
-              </div>
-            );
-          })}
+          <pre className="text-sm text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
+            {currentDiet.diet_note || "No specific diet note assigned for this day."}
+          </pre>
         </div>
       </Card>
 
@@ -514,7 +379,6 @@ export default function MemberDashboardPage() {
 
         {/* Membership & Schedule Card */}
         <div className="space-y-6">
-          {/* Membership Card */}
           <Card className="p-5">
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
               <div>
@@ -543,7 +407,6 @@ export default function MemberDashboardPage() {
             </div>
           </Card>
 
-          {/* Next Coaching Session */}
           <Card className="p-5">
             <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
               <div className="flex items-center gap-2">
@@ -571,31 +434,6 @@ export default function MemberDashboardPage() {
           </Card>
         </div>
       </div>
-
-      {/* Video Demonstration Modal */}
-      <Modal
-        isOpen={!!activeVideo}
-        onClose={() => setActiveVideo(null)}
-        title={activeVideo?.title || "Exercise Demonstration"}
-        description="High-definition form guide and biomechanical execution cues."
-      >
-        <div className="aspect-video w-full rounded-2xl bg-black border border-border overflow-hidden flex items-center justify-center">
-          <div className="text-center p-6">
-            <PlayCircle className="h-12 w-12 text-primary mx-auto mb-2 animate-pulse" />
-            <p className="text-sm font-bold text-text-primary">
-              Demo Video: {activeVideo?.title}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              (Video stream linked to Coach Alex&apos;s exercise library)
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={() => setActiveVideo(null)}>
-            Close Video
-          </Button>
-        </div>
-      </Modal>
     </MemberShell>
   );
 }

@@ -16,6 +16,7 @@ export const fitcoreTrainer: TrainerProfile = {
   specialization: "Hypertrophy & High-Performance Conditioning",
   currency: "INR",
   avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+  experience_years: 8,
   role: "trainer",
 };
 
@@ -48,6 +49,8 @@ export const fitcoreMembers: MemberProfile[] = [
     payment_status: "paid",
     membership_status: "active",
     pending_dues: 0,
+    attendance_rate: 92,
+    total_sessions_attended: 42,
     requires_password_change: false,
     avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     created_at: "2026-06-15",
@@ -80,6 +83,8 @@ export const fitcoreMembers: MemberProfile[] = [
     payment_status: "paid",
     membership_status: "active",
     pending_dues: 0,
+    attendance_rate: 96,
+    total_sessions_attended: 35,
     requires_password_change: false,
     avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     created_at: "2026-08-01",
@@ -107,11 +112,13 @@ export const fitcoreMembers: MemberProfile[] = [
     trainer_notes: "Missed 3 sessions due to business travel. Follow-up required.",
     membership_plan_name: "1-on-1 Monthly Elite",
     membership_start_date: "2026-10-10",
-    membership_end_date: "2026-11-26", // Expiring in 4 days
+    membership_end_date: "2026-11-26",
     membership_fee: 8500,
     payment_status: "partial",
     membership_status: "expiring",
     pending_dues: 4500,
+    attendance_rate: 68,
+    total_sessions_attended: 18,
     requires_password_change: false,
     avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
     created_at: "2026-09-10",
@@ -144,13 +151,15 @@ export const fitcoreMembers: MemberProfile[] = [
     payment_status: "paid",
     membership_status: "active",
     pending_dues: 0,
+    attendance_rate: 98,
+    total_sessions_attended: 74,
     requires_password_change: false,
     avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     created_at: "2026-03-01",
   },
 ];
 
-// Day-by-Day Workouts: Monday through Sunday
+// Day-by-Day Workouts: Note-based architecture (Clean, fast & trainer-friendly)
 export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
   {
     day: "Monday",
@@ -158,53 +167,13 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 60,
     focus: "Pectoralis Major & Lateral Tricep Head",
-    exercises: [
-      {
-        id: "m_1",
-        name: "Incline Barbell Bench Press",
-        target_muscle: "Upper Pectoralis",
-        sets: 4,
-        reps: "8-10",
-        weight_target: "75 kg",
-        rest_seconds: 90,
-        instructions: "Retract scapulae, touch upper chest smoothly, press up with 1s lockout.",
-        video_url: "https://www.youtube.com/watch?v=2yjwXTZQDDI",
-        is_completed: true,
-      },
-      {
-        id: "m_2",
-        name: "Flat Dumbbell Press",
-        target_muscle: "Mid Pectoralis",
-        sets: 3,
-        reps: "10-12",
-        weight_target: "28 kg DBs",
-        rest_seconds: 75,
-        instructions: "Maintain slight arch, drive dumbbells together without banging at the top.",
-        is_completed: true,
-      },
-      {
-        id: "m_3",
-        name: "Cable Chest Flyes",
-        target_muscle: "Inner Pectoral Squeeze",
-        sets: 3,
-        reps: "12-15",
-        weight_target: "15 kg / side",
-        rest_seconds: 60,
-        instructions: "Slight elbow bend, bring knuckles together and squeeze chest for 2 seconds.",
-        is_completed: false,
-      },
-      {
-        id: "m_4",
-        name: "Overhead Rope Tricep Extension",
-        target_muscle: "Triceps Long Head",
-        sets: 3,
-        reps: "12-15",
-        weight_target: "22 kg",
-        rest_seconds: 60,
-        instructions: "Keep elbows pinned close to ears, spread the rope at full extension.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Incline Barbell Bench Press: 4 sets x 8-10 reps (75 kg), rest 90s. Keep scapulae retracted.
+• Flat Dumbbell Press: 3 sets x 10-12 reps (28 kg DBs), rest 75s. Deep stretch at bottom.
+• Cable Chest Flyes: 3 sets x 15 reps (15 kg), rest 60s. Hold peak squeeze 2 seconds.
+• Overhead Rope Tricep Extension: 3 sets x 12-15 reps (22 kg), rest 60s. Pin elbows close to ears.
+• Dips (Bodyweight or weighted): 3 sets to technical failure.
+• Finish with 3 rounds of 60-second Plank hold.`,
+    exercises: [],
   },
   {
     day: "Tuesday",
@@ -212,52 +181,12 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 65,
     focus: "Lats, Rhomboids & Biceps Brachii",
-    exercises: [
-      {
-        id: "t_1",
-        name: "Trap Bar Deadlift",
-        target_muscle: "Posterior Chain",
-        sets: 4,
-        reps: "6-8",
-        weight_target: "140 kg",
-        rest_seconds: 120,
-        instructions: "Brace core tightly, push through floor, lockout hips firmly.",
-        is_completed: false,
-      },
-      {
-        id: "t_2",
-        name: "Chest-Supported T-Bar Row",
-        target_muscle: "Mid-Back & Upper Lats",
-        sets: 3,
-        reps: "8-10",
-        weight_target: "50 kg",
-        rest_seconds: 90,
-        instructions: "Pull elbows straight back, pause 1 second at full scapular retraction.",
-        is_completed: false,
-      },
-      {
-        id: "t_3",
-        name: "Neutral Grip Lat Pulldown",
-        target_muscle: "Latissimus Dorsi",
-        sets: 3,
-        reps: "10-12",
-        weight_target: "60 kg",
-        rest_seconds: 60,
-        instructions: "Drive elbows down to waist, avoid excessive swinging.",
-        is_completed: false,
-      },
-      {
-        id: "t_4",
-        name: "Incline Dumbbell Bicep Curl",
-        target_muscle: "Biceps Long Head",
-        sets: 3,
-        reps: "12",
-        weight_target: "14 kg DBs",
-        rest_seconds: 60,
-        instructions: "Full stretch at bottom, strict supination on the way up.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Trap Bar Deadlift: 4 sets x 6-8 reps (140 kg), rest 120s. Push the floor away, strong lockout.
+• Chest-Supported T-Bar Row: 3 sets x 8-10 reps (50 kg), rest 90s. 1s hold at full contraction.
+• Neutral Grip Lat Pulldown: 3 sets x 10-12 reps (60 kg), rest 60s. Drive elbows down to hips.
+• Incline Dumbbell Bicep Curl: 3 sets x 12 reps (14 kg DBs), rest 60s. Full strict stretch.
+• Hammer Curls: 3 sets x 12-15 reps (16 kg DBs). Focus on brachialis thickness.`,
+    exercises: [],
   },
   {
     day: "Wednesday",
@@ -265,52 +194,12 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 70,
     focus: "Quadriceps, Hamstrings & Calves",
-    exercises: [
-      {
-        id: "w_1",
-        name: "Barbell Back Squat",
-        target_muscle: "Quadriceps & Glutes",
-        sets: 4,
-        reps: "8",
-        weight_target: "105 kg",
-        rest_seconds: 120,
-        instructions: "Descend below parallel with controlled 3-second eccentric tempo.",
-        is_completed: false,
-      },
-      {
-        id: "w_2",
-        name: "Romanian Dumbbell Deadlift",
-        target_muscle: "Hamstrings",
-        sets: 3,
-        reps: "10-12",
-        weight_target: "32 kg DBs",
-        rest_seconds: 90,
-        instructions: "Hinge hips backward, keep knees soft, stretch hamstrings deep.",
-        is_completed: false,
-      },
-      {
-        id: "w_3",
-        name: "Bulgarian Split Squats",
-        target_muscle: "Unilateral Glute & Quad",
-        sets: 3,
-        reps: "8 / leg",
-        weight_target: "18 kg DBs",
-        rest_seconds: 90,
-        instructions: "Torso upright, drive straight through front mid-foot.",
-        is_completed: false,
-      },
-      {
-        id: "w_4",
-        name: "Standing Calf Raises",
-        target_muscle: "Gastrocnemius",
-        sets: 4,
-        reps: "15",
-        weight_target: "Bodyweight + 25kg",
-        rest_seconds: 45,
-        instructions: "Full deep stretch at the bottom, 2s peak contraction at top.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Barbell Back Squat: 4 sets x 8 reps (105 kg), rest 120s. Controlled 3s descent below parallel.
+• Romanian Dumbbell Deadlift: 3 sets x 10-12 reps (32 kg DBs), rest 90s. Deep hamstring hinge.
+• Bulgarian Split Squats: 3 sets x 8 reps per leg (18 kg DBs), rest 90s. Upright torso.
+• Lying Leg Curls: 3 sets x 12-15 reps (45 kg), rest 60s. Slow eccentric.
+• Standing Calf Raises: 4 sets x 15 reps (Bodyweight + 25kg), rest 45s. Full deep stretch at bottom.`,
+    exercises: [],
   },
   {
     day: "Thursday",
@@ -318,41 +207,12 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 55,
     focus: "Deltoids & Core Musculature",
-    exercises: [
-      {
-        id: "th_1",
-        name: "Seated Dumbbell Overhead Press",
-        target_muscle: "Anterior & Lateral Delts",
-        sets: 4,
-        reps: "8-10",
-        weight_target: "24 kg DBs",
-        rest_seconds: 90,
-        instructions: "Elbows slightly tucked, press overhead in arc.",
-        is_completed: false,
-      },
-      {
-        id: "th_2",
-        name: "Cable Lateral Raises",
-        target_muscle: "Lateral Deltoid",
-        sets: 4,
-        reps: "12-15",
-        weight_target: "7.5 kg",
-        rest_seconds: 45,
-        instructions: "Constant tension, lead with elbows up to shoulder level.",
-        is_completed: false,
-      },
-      {
-        id: "th_3",
-        name: "Hanging Leg Raises",
-        target_muscle: "Lower Abdominals",
-        sets: 3,
-        reps: "12-15",
-        weight_target: "Bodyweight",
-        rest_seconds: 60,
-        instructions: "Curl pelvis upward, control swing on the descent.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Seated DB Overhead Press: 4 sets x 8-10 reps (24 kg DBs), rest 90s. Keep core braced.
+• Cable Lateral Raises: 4 sets x 12-15 reps (7.5 kg), rest 45s. Constant deltoid tension.
+• Face Pulls with Rope: 3 sets x 15 reps (20 kg), rest 60s. External rotation emphasis for rear delts.
+• Hanging Leg Raises: 3 sets x 12-15 reps, rest 60s. Curl pelvis up without swinging.
+• Ab Wheel Rollouts: 3 sets x 10 reps.`,
+    exercises: [],
   },
   {
     day: "Friday",
@@ -360,41 +220,11 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 50,
     focus: "Compound Density & Power",
-    exercises: [
-      {
-        id: "f_1",
-        name: "Kettlebell Clean & Press",
-        target_muscle: "Full Posterior & Shoulders",
-        sets: 4,
-        reps: "8 / side",
-        weight_target: "20 kg KB",
-        rest_seconds: 60,
-        instructions: "Explosive hip drive, smooth rack, crisp press.",
-        is_completed: false,
-      },
-      {
-        id: "f_2",
-        name: "Weighted Dips",
-        target_muscle: "Chest & Triceps",
-        sets: 3,
-        reps: "10",
-        weight_target: "+15 kg belt",
-        rest_seconds: 75,
-        instructions: "Controlled 90 degree elbow bend, avoid shoulder shrug.",
-        is_completed: false,
-      },
-      {
-        id: "f_3",
-        name: "Sled Push & Pull",
-        target_muscle: "Conditioning & Quads",
-        sets: 4,
-        reps: "25 meters",
-        weight_target: "80 kg sled",
-        rest_seconds: 90,
-        instructions: "Stay low, powerful leg drive.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Kettlebell Clean & Press: 4 sets x 8 reps per side (20 kg KB), rest 60s.
+• Weighted Dips: 3 sets x 10 reps (+15 kg belt), rest 75s.
+• Heavy Sled Push: 4 rounds x 25 meters (80 kg sled), rest 90s. Fast sprint speed.
+• Farmer's Walk: 3 rounds x 40 meters (32 kg DBs in each hand). Grip and trap endurance.`,
+    exercises: [],
   },
   {
     day: "Saturday",
@@ -402,30 +232,12 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: false,
     estimated_duration_min: 45,
     focus: "Zone 2 Cardio & Hip/Thoracic Mobility",
-    exercises: [
-      {
-        id: "s_1",
-        name: "Assault Bike Intervals / Zone 2",
-        target_muscle: "Aerobic Capacity",
-        sets: 1,
-        reps: "25 mins",
-        weight_target: "HR 130-140 bpm",
-        rest_seconds: 0,
-        instructions: "Steady sustainable pace.",
-        is_completed: false,
-      },
-      {
-        id: "s_2",
-        name: "90/90 Hip Flow & World's Greatest Stretch",
-        target_muscle: "Hip Capsule & Thoracic Spine",
-        sets: 3,
-        reps: "8 / side",
-        weight_target: "Mobility",
-        rest_seconds: 30,
-        instructions: "Breathe into stretches, hold end range 3 seconds.",
-        is_completed: false,
-      },
-    ],
+    workout_note: `• Assault Bike or Incline Treadmill: 25 minutes steady Zone 2 cardio (HR 130-140 bpm).
+• World's Greatest Stretch: 2 sets x 6 reps per side.
+• 90/90 Hip Flow: 5 minutes continuous gentle transitions.
+• Cat-Cow & Thoracic Rotations: 3 sets x 10 reps.
+• Foam roll IT bands, glutes, and upper back.`,
+    exercises: [],
   },
   {
     day: "Sunday",
@@ -433,203 +245,125 @@ export const sampleWeeklyWorkouts: DayWorkoutPlan[] = [
     is_rest_day: true,
     estimated_duration_min: 0,
     focus: "Complete Rest, CNS Recovery & Hydration",
+    workout_note: `• Complete Rest Day.
+• Take a 30-minute easy outdoor walk.
+• Hydrate with minimum 3.5 Liters water.
+• Focus on 8+ hours quality sleep and nutrition recovery.`,
     exercises: [],
   },
 ];
 
-// Day-by-Day Nutrition Plans (Monday through Sunday)
+// Day-by-Day Nutrition Plans: Note-based architecture (Clean, fast & trainer-friendly)
 export const sampleWeeklyDiet: DayDietPlan[] = [
   {
     day: "Monday",
+    diet_title: "High Protein & Training Day Fuel",
     daily_calories_target: 2200,
     protein_target_g: 180,
     carbs_target_g: 200,
     fats_target_g: 60,
     water_target_liters: 3.5,
-    instructions: "High protein intake post chest session. Keep hydration consistent throughout training.",
-    meals: [
-      {
-        id: "d_m_1",
-        meal_type: "Breakfast",
-        timing: "08:00 AM",
-        foods: "4 Whole Eggs + 2 Egg Whites, 60g Rolled Oats with berries & 1 tsp chia seeds.",
-        quantity: "1 Bowl (approx 350g)",
-        calories: 550,
-        protein_g: 40,
-        carbs_g: 55,
-        fats_g: 16,
-        is_completed: true,
-      },
-      {
-        id: "d_m_2",
-        meal_type: "Morning Snack",
-        timing: "11:00 AM",
-        foods: "1 Handful Roasted Almonds (15g) + 1 Apple.",
-        quantity: "150g",
-        calories: 180,
-        protein_g: 5,
-        carbs_g: 22,
-        fats_g: 9,
-        is_completed: true,
-      },
-      {
-        id: "d_m_3",
-        meal_type: "Lunch",
-        timing: "01:30 PM",
-        foods: "200g Grilled Chicken Breast / Paneer, 150g Basmati Rice, Steamed Broccoli & Cucumber.",
-        quantity: "380g",
-        calories: 620,
-        protein_g: 50,
-        carbs_g: 65,
-        fats_g: 14,
-        is_completed: false,
-      },
-      {
-        id: "d_m_4",
-        meal_type: "Evening Snack",
-        timing: "05:00 PM",
-        foods: "1 Scoop Whey Isolate in water + 1 Banana + 2 Rice Cakes.",
-        quantity: "200g",
-        calories: 280,
-        protein_g: 28,
-        carbs_g: 38,
-        fats_g: 2,
-        is_completed: false,
-      },
-      {
-        id: "d_m_5",
-        meal_type: "Dinner",
-        timing: "08:30 PM",
-        foods: "220g Baked Fish / Tofu, 180g Sweet Potato Mash, Mixed Green Salad with 1 tsp olive oil.",
-        quantity: "400g",
-        calories: 570,
-        protein_g: 57,
-        carbs_g: 40,
-        fats_g: 19,
-        is_completed: false,
-      },
-    ],
+    diet_note: `• Breakfast (8:00 AM): 4 whole eggs + 2 egg whites scramble with spinach, 60g rolled oats with blueberries & 1 tsp chia seeds.
+• Morning Snack (11:00 AM): 1 medium apple + 15g roasted raw almonds.
+• Lunch (1:30 PM): 200g grilled chicken breast or paneer, 150g basmati rice, steamed broccoli & cucumber salad.
+• Pre-Workout Fuel (5:00 PM): 1 scoop Whey isolate in water + 1 banana + 2 organic rice cakes with light honey.
+• Post-Workout Dinner (8:30 PM): 220g baked fish or tofu, 180g sweet potato mash, fresh mixed greens with 1 tsp olive oil.
+• Hydration Rule: Drink at least 3.5 Liters of water throughout the day. Avoid sugar & processed foods.`,
+    meals: [],
   },
-  // Reusable for other days with calibrated macros
   {
     day: "Tuesday",
+    diet_title: "Heavy Pull & Power Fuel",
     daily_calories_target: 2300,
     protein_target_g: 185,
     carbs_target_g: 215,
     fats_target_g: 62,
     water_target_liters: 4.0,
-    instructions: "Heavy back & deadlift day. Increase carbohydrate portion around workout.",
-    meals: [
-      {
-        id: "d_t_1",
-        meal_type: "Breakfast",
-        timing: "08:00 AM",
-        foods: "Egg white scramble with spinach, 2 slices whole wheat sourdough, 1 glass fresh orange juice.",
-        quantity: "350g",
-        calories: 560,
-        protein_g: 42,
-        carbs_g: 60,
-        fats_g: 12,
-        is_completed: false,
-      },
-      {
-        id: "d_t_2",
-        meal_type: "Morning Snack",
-        timing: "11:00 AM",
-        foods: "Greek Yogurt (150g) with 1 tbsp walnuts and honey.",
-        quantity: "160g",
-        calories: 210,
-        protein_g: 15,
-        carbs_g: 18,
-        fats_g: 8,
-        is_completed: false,
-      },
-      {
-        id: "d_t_3",
-        meal_type: "Lunch",
-        timing: "01:30 PM",
-        foods: "220g Minced Turkey / Soya chunks, 180g Quinoa & Bell Pepper stir-fry.",
-        quantity: "400g",
-        calories: 650,
-        protein_g: 52,
-        carbs_g: 70,
-        fats_g: 15,
-        is_completed: false,
-      },
-      {
-        id: "d_t_4",
-        meal_type: "Evening Snack",
-        timing: "05:00 PM",
-        foods: "1 Scoop Whey + 40g Cream of Rice.",
-        quantity: "250g",
-        calories: 310,
-        protein_g: 27,
-        carbs_g: 45,
-        fats_g: 3,
-        is_completed: false,
-      },
-      {
-        id: "d_t_5",
-        meal_type: "Dinner",
-        timing: "08:30 PM",
-        foods: "200g Grilled Salmon / Paneer steak, roasted asparagus & 1 cup brown rice.",
-        quantity: "380g",
-        calories: 570,
-        protein_g: 49,
-        carbs_g: 42,
-        fats_g: 24,
-        is_completed: false,
-      },
-    ],
+    diet_note: `• Breakfast (8:00 AM): 3 whole eggs + 3 egg whites omelette, 2 slices toasted sourdough, black coffee.
+• Morning Snack (11:00 AM): 150g low-fat Greek yogurt with 1 tbsp walnuts.
+• Lunch (1:30 PM): 220g minced chicken/turkey or soya chunks, 180g cooked quinoa, bell peppers & zucchini.
+• Pre-Workout (5:00 PM): 1 scoop whey protein + 40g cream of rice with cinnamon.
+• Dinner (8:30 PM): 200g grilled salmon or paneer steak, roasted asparagus & 1 cup brown rice.
+• Hydration: 4 Liters minimum. Heavy deadlift day requires extra water.`,
+    meals: [],
   },
   {
     day: "Wednesday",
+    diet_title: "High Carbohydrate Leg Day Protocol",
     daily_calories_target: 2400,
     protein_target_g: 180,
     carbs_target_g: 240,
     fats_target_g: 65,
     water_target_liters: 4.0,
-    instructions: "High-carb leg session protocol.",
+    diet_note: `• Breakfast (8:00 AM): 4 eggs, 75g oats cooked in almond milk with 1 banana sliced.
+• Morning Snack (11:00 AM): 2 boiled eggs + 1 orange.
+• Lunch (1:30 PM): 220g chicken breast or paneer, 200g jasmine rice, sauteed green beans.
+• Pre-Workout (5:00 PM): 2 slices whole wheat toast with 1 tbsp peanut butter + 1 scoop whey.
+• Dinner (8:30 PM): 220g lean beef / soya / paneer, 220g baked potato with skin, big bowl of cucumber and tomato salad.
+• Note: Extra carbs allotted today to support squat volume and glycogen recovery.`,
     meals: [],
   },
   {
     day: "Thursday",
+    diet_title: "Lean Conditioning & Moderate Carbs",
     daily_calories_target: 2150,
     protein_target_g: 180,
     carbs_target_g: 190,
     fats_target_g: 58,
     water_target_liters: 3.5,
-    instructions: "Moderate carb intake.",
+    diet_note: `• Breakfast (8:00 AM): 1 scoop whey smoothie with 250ml milk, 50g oats, spinach, and 1 tbsp flaxseed.
+• Morning Snack (11:00 AM): Handful of roasted makhana (lotus seeds) + green tea.
+• Lunch (1:30 PM): 200g chicken or grilled tofu, 120g brown rice, mixed vegetable curry.
+• Snack (5:00 PM): 1 boiled egg + 1 small banana.
+• Dinner (8:30 PM): 200g grilled fish / paneer, stir-fried broccoli, mushrooms, and zucchini with herbs.
+• Hydration: 3.5 Liters water.`,
     meals: [],
   },
   {
     day: "Friday",
+    diet_title: "Athletic Circuit Energy Plan",
     daily_calories_target: 2200,
     protein_target_g: 180,
     carbs_target_g: 200,
     fats_target_g: 60,
     water_target_liters: 3.5,
-    instructions: "Athletic performance balance.",
+    diet_note: `• Breakfast: 4 eggs scrambled + 2 whole wheat rotis or toasts.
+• Snack: 1 glass buttermilk / chaas + 10 almonds.
+• Lunch: 200g chicken / paneer, 150g basmati rice, dal & raw salad.
+• Pre-Workout: 1 scoop whey in water + 1 apple 45 mins prior.
+• Dinner: 220g grilled protein of choice, baked sweet potato wedges, cucumber salad.
+• Water: 3.5L.`,
     meals: [],
   },
   {
     day: "Saturday",
+    diet_title: "Cardio Cleanse & Fat Burn",
     daily_calories_target: 2100,
     protein_target_g: 175,
     carbs_target_g: 180,
     fats_target_g: 60,
     water_target_liters: 3.5,
-    instructions: "Cardio day nutrition.",
+    diet_note: `• Breakfast: 3 egg whites + 2 whole eggs, avocado slices, 1 slice sourdough toast.
+• Lunch: 200g grilled chicken / soya chunks with quinoa salad, lemon dressing.
+• Snack: Coconut water + 1 scoop protein.
+• Dinner: Light chicken soup or lentil soup with 150g grilled paneer/fish and steamed veggies.
+• Water: 3.5L.`,
     meals: [],
   },
   {
     day: "Sunday",
+    diet_title: "Rest Day Recovery & Light Deficit",
     daily_calories_target: 1950,
     protein_target_g: 170,
     carbs_target_g: 150,
     fats_target_g: 55,
     water_target_liters: 3.0,
-    instructions: "Rest day caloric deficit for recovery.",
+    diet_note: `• Rest Day Calorie Protocol: Lower carbohydrates on rest days since training energy is not expended.
+• Breakfast: 3 whole eggs with spinach & mushrooms + 1 cup green tea.
+• Lunch: 200g chicken or paneer, 100g basmati rice, big vegetable bowl.
+• Evening Snack: 1 glass cold water with lemon + 1 protein bar or whey shake.
+• Dinner: 220g fish or tofu with grilled vegetables, light dressing.
+• Focus: Early dinner before 8:00 PM to optimize deep sleep.`,
     meals: [],
   },
 ];
@@ -644,7 +378,6 @@ export const sampleDashboardKpis = {
   monthlyRevenue: 148500,
   expiringMemberships: 3,
 };
-
 
 // Backward compatibility exports for widgets and charts
 export const initialTrainerProfile = fitcoreTrainer;

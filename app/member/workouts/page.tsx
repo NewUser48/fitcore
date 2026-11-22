@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { sampleWeeklyWorkouts } from "@/lib/mock-data";
 import { DayOfWeek } from "@/types";
-import { Dumbbell, Clock, CheckCircle2 } from "lucide-react";
+import { Dumbbell, Clock, CheckCircle2, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 const DAYS: DayOfWeek[] = [
@@ -22,15 +22,16 @@ const DAYS: DayOfWeek[] = [
 
 export default function MemberWorkoutsPage() {
   const [activeDay, setActiveDay] = React.useState<DayOfWeek>("Monday");
-  const [completed, setCompleted] = React.useState<Record<string, boolean>>({ m_1: true });
+  const [completed, setCompleted] = React.useState<Record<string, boolean>>({});
 
   const workout = sampleWeeklyWorkouts.find((w) => w.day === activeDay) || sampleWeeklyWorkouts[0];
+  const isDone = !!completed[activeDay];
 
-  const toggle = (id: string, name: string) => {
+  const handleToggleComplete = () => {
     setCompleted((prev) => {
-      const next = !prev[id];
-      if (next) toast.success(`Completed: ${name}`);
-      return { ...prev, [id]: next };
+      const next = !prev[activeDay];
+      if (next) toast.success(`Logged ${activeDay}'s workout as complete!`);
+      return { ...prev, [activeDay]: next };
     });
   };
 
@@ -40,12 +41,12 @@ export default function MemberWorkoutsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-display">
-              Workout Program & Exercises
+              Workout Routine & Coach Notes
             </h1>
             <Badge variant="primary">{activeDay}</Badge>
           </div>
           <p className="text-xs text-text-muted mt-1">
-            Assigned by Coach Alex Vance &bull; 7-day periodization protocol
+            Assigned by Coach Alex Vance &bull; 7-Day Day-by-Day Split
           </p>
         </div>
       </div>
@@ -74,52 +75,41 @@ export default function MemberWorkoutsPage() {
       </div>
 
       <Card className="p-6 mb-6">
-        <h2 className="text-lg font-black text-text-primary mb-1">{workout.workout_name}</h2>
-        <p className="text-xs text-text-muted mb-6">Focus: {workout.focus}</p>
-
-        {workout.is_rest_day ? (
-          <div className="p-8 text-center text-xs text-text-muted border border-dashed border-border rounded-xl">
-            Rest Day. Focus on mobility, hydration, and nutrition.
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-primary uppercase">{activeDay} Split</span>
+              {workout.is_rest_day && <Badge variant="neutral">Rest Day</Badge>}
+              {isDone && <Badge variant="completed">Completed ✓</Badge>}
+            </div>
+            <h2 className="text-lg font-black text-text-primary mt-1">{workout.workout_name}</h2>
+            <p className="text-xs text-text-muted">Focus: {workout.focus}</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {workout.exercises.map((ex, index) => {
-              const isDone = !!completed[ex.id];
 
-              return (
-                <div
-                  key={ex.id}
-                  className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${
-                    isDone ? "bg-[#141C18] border-emerald-500/40" : "bg-[#151B22] border-border"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => toggle(ex.id, ex.name)}
-                      className={`h-6 w-6 rounded-lg border flex items-center justify-center ${
-                        isDone ? "bg-emerald-500 text-black border-emerald-400" : "bg-[#10151B] border-border"
-                      }`}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                    </button>
-                    <div>
-                      <h4 className={`text-xs font-bold ${isDone ? "text-emerald-300 line-through" : "text-text-primary"}`}>
-                        {index + 1}. {ex.name}
-                      </h4>
-                      <p className="text-[10px] text-text-muted">{ex.instructions}</p>
-                    </div>
-                  </div>
+          {!workout.is_rest_day && (
+            <Button
+              variant={isDone ? "secondary" : "primary"}
+              size="sm"
+              onClick={handleToggleComplete}
+              className="font-bold shadow-lime-glow-sm"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              {isDone ? "Marked as Done ✓" : "Mark Workout Complete"}
+            </Button>
+          )}
+        </div>
 
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-primary">
-                    <span>{ex.sets} &times; {ex.reps}</span>
-                    <span className="text-text-muted">&bull;</span>
-                    <span>{ex.weight_target}</span>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Workout Note */}
+        <div className="p-5 rounded-2xl bg-[#10151B] border border-border/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-primary mb-3">
+            <FileText className="h-4 w-4" />
+            <span>Trainer Routine Instructions ({activeDay}):</span>
           </div>
-        )}
+
+          <pre className="text-sm text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
+            {workout.workout_note || "No specific routine note assigned for this day."}
+          </pre>
+        </div>
       </Card>
     </MemberShell>
   );

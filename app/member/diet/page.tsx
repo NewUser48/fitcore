@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { sampleWeeklyDiet } from "@/lib/mock-data";
 import { DayOfWeek } from "@/types";
-import { UtensilsCrossed, Clock, CheckCircle2, Droplets } from "lucide-react";
+import { UtensilsCrossed, Clock, CheckCircle2, Droplets, FileText } from "lucide-react";
 
 const DAYS: DayOfWeek[] = [
   "Monday",
@@ -29,12 +29,12 @@ export default function MemberDietPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-display">
-              Diet & Meal Plan
+              Diet & Nutrition Notes
             </h1>
             <Badge variant="active">{activeDay}</Badge>
           </div>
           <p className="text-xs text-text-muted mt-1">
-            Tailored nutrition and hydration goals for {activeDay} &bull; Target: {diet.daily_calories_target} kcal
+            Personalized meal instructions and hydration protocol for {activeDay}
           </p>
         </div>
       </div>
@@ -56,39 +56,31 @@ export default function MemberDietPage() {
               }`}
             >
               <span className="text-xs font-bold block mb-1">{day}</span>
-              <p className="text-xs font-black text-primary font-mono">{d?.daily_calories_target || 2200} kcal</p>
+              <p className="text-xs font-black text-primary font-mono">{d?.diet_title || "Daily Fuel"}</p>
             </button>
           );
         })}
       </div>
 
       <Card className="p-6 mb-6">
-        <div className="grid grid-cols-3 gap-3 text-center mb-6">
-          <div className="p-3 rounded-xl bg-[#151B22] border border-border">
-            <span className="text-[10px] text-text-muted block">Protein</span>
-            <span className="text-lg font-black text-primary font-mono">{diet.protein_target_g}g</span>
-          </div>
-          <div className="p-3 rounded-xl bg-[#151B22] border border-border">
-            <span className="text-[10px] text-text-muted block">Carbohydrates</span>
-            <span className="text-lg font-black text-sky-400 font-mono">{diet.carbs_target_g}g</span>
-          </div>
-          <div className="p-3 rounded-xl bg-[#151B22] border border-border">
-            <span className="text-[10px] text-text-muted block">Fats</span>
-            <span className="text-lg font-black text-amber-400 font-mono">{diet.fats_target_g}g</span>
+        <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
+          <div>
+            <span className="text-[10px] font-bold text-emerald-400 uppercase">{activeDay} Nutrition</span>
+            <h2 className="text-lg font-black text-text-primary mt-1">{diet.diet_title || "Daily Nutrition Plan"}</h2>
+            <p className="text-xs text-text-muted">Target: ~{diet.daily_calories_target || 2200} kcal</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {diet.meals.map((meal) => (
-            <div key={meal.id} className="p-4 rounded-xl bg-[#151B22] border border-border space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-text-primary">{meal.meal_type}</span>
-                <span className="text-xs font-mono font-bold text-primary">{meal.calories} kcal</span>
-              </div>
-              <p className="text-xs text-text-muted">{meal.foods}</p>
-              <span className="text-[10px] text-text-dim block font-mono">Timing: {meal.timing}</span>
-            </div>
-          ))}
+        {/* Diet Note */}
+        <div className="p-5 rounded-2xl bg-[#10151B] border border-border/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-3">
+            <FileText className="h-4 w-4" />
+            <span>Coach Meal & Food Instructions:</span>
+          </div>
+
+          <pre className="text-sm text-text-primary font-mono whitespace-pre-wrap leading-relaxed">
+            {diet.diet_note || "No specific diet note assigned for this day."}
+          </pre>
         </div>
       </Card>
     </MemberShell>
