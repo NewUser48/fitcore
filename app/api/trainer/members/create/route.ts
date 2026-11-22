@@ -60,15 +60,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 1. Create Supabase Auth account using Admin API
+    // 1. Create Supabase Auth account using Admin API (with phone and email mapped)
+    const resolvedEmail = email || `${normalizedPhone.replace(/\D/g, "")}@fitcore.athlete`;
+
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       phone: normalizedPhone,
+      email: resolvedEmail,
       password: temporary_password,
-      phone_confirm: true, // Confirm phone for login
+      email_confirm: true,
+      phone_confirm: true,
       user_metadata: {
         role: "member",
         full_name,
         phone: normalizedPhone,
+        email: resolvedEmail,
       },
     });
 

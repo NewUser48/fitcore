@@ -83,14 +83,36 @@ export default function LoginPage() {
 
     const supabase = createClient();
     if (supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // 1. Try phone sign-in
+      let authResult = await supabase.auth.signInWithPassword({
         phone: norm.e164,
         password: memberPassword,
       });
 
-      if (error) {
+      // 2. If phone provider is disabled in Supabase or fails, resolve linked email seamlessly!
+      if (authResult.error) {
+        try {
+          const lookupRes = await fetch("/api/auth/member-lookup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: norm.e164 }),
+          });
+          const lookupData = await lookupRes.json();
+
+          if (lookupData.success && lookupData.email) {
+            authResult = await supabase.auth.signInWithPassword({
+              email: lookupData.email,
+              password: memberPassword,
+            });
+          }
+        } catch (lookupErr) {
+          console.error("Lookup fallback error:", lookupErr);
+        }
+      }
+
+      if (authResult.error) {
         setIsLoading(false);
-        setErrorMessage(error.message);
+        setErrorMessage(authResult.error.message);
         return;
       }
     }
