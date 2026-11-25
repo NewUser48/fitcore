@@ -36,11 +36,6 @@ export default function SchedulePage() {
         {sampleSessions.map((session) => (
           <Card key={session.id} glowOnHover className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img
-                src={session.member_avatar || ""}
-                alt={session.member_name}
-                className="h-12 w-12 rounded-2xl object-cover border border-primary/30 shrink-0"
-              />
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-text-primary">

@@ -6,6 +6,7 @@ import {
   PaymentRecord,
   TrainingSession,
 } from "@/types";
+import { getTodayISODate } from "@/lib/utils";
 
 export const fitcoreTrainer: TrainerProfile = {
   id: "trainer_fitcore_01",
@@ -465,6 +466,8 @@ export const samplePayments: PaymentRecord[] = [
     notes: "Balance pending: ₹4,500 due on 25th Nov",
   },
 ];
+const TODAY = getTodayISODate();
+
 export const sampleSessions: TrainingSession[] = [
   {
     id: "ses_01",
@@ -472,7 +475,7 @@ export const sampleSessions: TrainingSession[] = [
     member_name: "Rohan Malhotra",
     member_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
     title: "Posterior Chain & Deadlift Max Test",
-    date: "2026-11-22",
+    date: TODAY,
     start_time: "06:30",
     end_time: "07:30",
     status: "completed",
@@ -484,7 +487,7 @@ export const sampleSessions: TrainingSession[] = [
     member_name: "Kavita Rao",
     member_avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
     title: "Push Day A (Chest, Delts & Triceps)",
-    date: "2026-11-22",
+    date: TODAY,
     start_time: "08:00",
     end_time: "09:00",
     status: "in_progress",
@@ -496,7 +499,7 @@ export const sampleSessions: TrainingSession[] = [
     member_name: "Priya Sundaram",
     member_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
     title: "Aerobic Capacity & Sled Conditioning",
-    date: "2026-11-22",
+    date: TODAY,
     start_time: "17:00",
     end_time: "18:00",
     status: "scheduled",

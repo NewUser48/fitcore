@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { TrainerShell } from "@/components/trainer/trainer-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sampleWeeklyWorkouts, fitcoreMembers } from "@/lib/mock-data";
-import { DayWorkoutPlan, DayOfWeek } from "@/types";
+import { createClient } from "@/lib/supabase/client";
+import { mapMemberRow, type MemberRow } from "@/lib/supabase/mappers";
+import { MemberProfile, DayWorkoutPlan, DayOfWeek } from "@/types";
 import {
   Dumbbell,
   Clock,
@@ -31,42 +34,148 @@ const DAYS: DayOfWeek[] = [
   "Sunday",
 ];
 
-export default function TrainerWorkoutManagementPage() {
-  const [selectedMemberId, setSelectedMemberId] = React.useState(fitcoreMembers[0].id);
-  const [activeDay, setActiveDay] = React.useState<DayOfWeek>("Monday");
-  const [weeklyPlan, setWeeklyPlan] = React.useState<DayWorkoutPlan[]>(sampleWeeklyWorkouts);
+const DEFAULT_WEEK: DayWorkoutPlan[] = DAYS.map((day) => ({
+  day,
+  workout_name: "Training Split",
+  is_rest_day: false,
+  workout_note: "",
+}));
 
-  const selectedMember = fitcoreMembers.find((m) => m.id === selectedMemberId) || fitcoreMembers[0];
+interface WorkoutPlanRow {
+  member_id: string;
+  day: DayOfWeek;
+  workout_name: string;
+  is_rest_day: boolean;
+  estimated_duration_min: number | null;
+  focus: string | null;
+  workout_note: string;
+}
+
+function mergePlans(rows: WorkoutPlanRow[]): DayWorkoutPlan[] {
+  return DEFAULT_WEEK.map((defaultPlan) => {
+    const row = rows.find((r) => r.day === defaultPlan.day);
+    if (!row) return { ...defaultPlan };
+
+    return {
+      day: defaultPlan.day,
+      workout_name: row.workout_name,
+      is_rest_day: row.is_rest_day,
+      estimated_duration_min: row.estimated_duration_min ?? undefined,
+      focus: row.focus ?? undefined,
+      workout_note: row.workout_note,
+    };
+  });
+}
+
+export default function TrainerWorkoutManagementPage() {
+  const [members, setMembers] = React.useState<MemberProfile[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = React.useState(true);
+  const [selectedMemberId, setSelectedMemberId] = React.useState("");
+  const [activeDay, setActiveDay] = React.useState<DayOfWeek>("Monday");
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [plansByMember, setPlansByMember] = React.useState<Record<string, DayWorkoutPlan[]>>({});
+
+  const loadMembers = React.useCallback(async () => {
+    const supabase = createClient();
+
+    if (!supabase) {
+      setMembers(fitcoreMembers);
+      setPlansByMember(
+        Object.fromEntries(
+          fitcoreMembers.map((m) => [m.id, sampleWeeklyWorkouts.map((p) => ({ ...p }))])
+        )
+      );
+      setIsLoadingMembers(false);
+      return;
+    }
+
+    const [{ data: rows, error }, { data: planRows }] = await Promise.all([
+      supabase.from("members").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("workout_plans")
+        .select(
+          "member_id, day, workout_name, is_rest_day, estimated_duration_min, focus, workout_note"
+        ),
+    ]);
+
+    if (error) {
+      toast.error(`Could not load athletes: ${error.message}`);
+      setIsLoadingMembers(false);
+      return;
+    }
+
+    const mappedMembers = ((rows ?? []) as MemberRow[]).map((row) => mapMemberRow(row));
+
+    const plansByMemberId = new Map<string, WorkoutPlanRow[]>();
+    ((planRows ?? []) as WorkoutPlanRow[]).forEach((row) => {
+      const list = plansByMemberId.get(row.member_id) ?? [];
+      list.push(row);
+      plansByMemberId.set(row.member_id, list);
+    });
+
+    setMembers(mappedMembers);
+    setPlansByMember(
+      Object.fromEntries(
+        mappedMembers.map((m) => [m.id, mergePlans(plansByMemberId.get(m.id) ?? [])])
+      )
+    );
+    setIsLoadingMembers(false);
+  }, []);
+
+  React.useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  React.useEffect(() => {
+    const refresh = () => loadMembers();
+    window.addEventListener("fitcore:member-created", refresh);
+    window.addEventListener("fitcore:members-changed", refresh);
+    return () => {
+      window.removeEventListener("fitcore:member-created", refresh);
+      window.removeEventListener("fitcore:members-changed", refresh);
+    };
+  }, [loadMembers]);
+
+  React.useEffect(() => {
+    if (members.length === 0) return;
+    if (!members.some((m) => m.id === selectedMemberId)) {
+      setSelectedMemberId(members[0].id);
+    }
+  }, [members, selectedMemberId]);
+
+  const selectedMember =
+    members.find((m) => m.id === selectedMemberId) || members[0];
+  const weeklyPlan = plansByMember[selectedMemberId] || DEFAULT_WEEK;
   const currentDayPlan = weeklyPlan.find((p) => p.day === activeDay) || weeklyPlan[0];
 
+  const updateActiveDay = (updater: (plan: DayWorkoutPlan) => DayWorkoutPlan) => {
+    if (!selectedMemberId) return;
+    setPlansByMember((prev) => ({
+      ...prev,
+      [selectedMemberId]: (prev[selectedMemberId] || DEFAULT_WEEK).map((p) =>
+        p.day === activeDay ? updater(p) : p
+      ),
+    }));
+  };
+
   const handleUpdateWorkoutName = (newName: string) => {
-    setWeeklyPlan((prev) =>
-      prev.map((p) => (p.day === activeDay ? { ...p, workout_name: newName } : p))
-    );
+    updateActiveDay((p) => ({ ...p, workout_name: newName }));
   };
 
   const handleUpdateWorkoutNote = (newNote: string) => {
-    setWeeklyPlan((prev) =>
-      prev.map((p) => (p.day === activeDay ? { ...p, workout_note: newNote } : p))
-    );
+    updateActiveDay((p) => ({ ...p, workout_note: newNote }));
   };
 
   const handleToggleRestDay = () => {
-    setWeeklyPlan((prev) =>
-      prev.map((p) =>
-        p.day === activeDay
-          ? {
-              ...p,
-              is_rest_day: !p.is_rest_day,
-              workout_name: !p.is_rest_day ? "Active Recovery & Rest Day" : "Custom Strength Split",
-              workout_note: !p.is_rest_day
-                ? "• Complete Rest Day.\n• Light 30-minute outdoor walk.\n• Hydrate with 3.5L water & prioritize 8 hours sleep."
-                : "• Enter workout instructions here...",
-            }
-          : p
-      )
-    );
-    toast.success(`Toggled ${activeDay} rest day status`);
+    updateActiveDay((p) => ({
+      ...p,
+      is_rest_day: !p.is_rest_day,
+      workout_name: !p.is_rest_day ? "Active Recovery & Rest Day" : "Custom Strength Split",
+      workout_note: !p.is_rest_day
+        ? "• Complete Rest Day.\n• Light 30-minute outdoor walk.\n• Hydrate with 3.5L water & prioritize 8 hours sleep."
+        : "• Enter workout instructions here...",
+    }));
+    toast.success(`Toggled ${activeDay} rest day status for ${selectedMember.full_name}`);
   };
 
   const handleInsertTemplate = () => {
@@ -80,7 +189,35 @@ export default function TrainerWorkoutManagementPage() {
     toast.success("Inserted routine structure template!");
   };
 
-  const handleSaveRoutine = () => {
+  const handleSaveRoutine = async () => {
+    if (!selectedMember) return;
+
+    const supabase = createClient();
+    if (!supabase) {
+      toast.success(`Saved ${activeDay} workout instructions for ${selectedMember.full_name}!`);
+      return;
+    }
+
+    setIsSaving(true);
+    const { error } = await supabase.from("workout_plans").upsert(
+      {
+        member_id: selectedMember.id,
+        day: activeDay,
+        workout_name: currentDayPlan.workout_name || "Training Split",
+        is_rest_day: currentDayPlan.is_rest_day,
+        estimated_duration_min: currentDayPlan.estimated_duration_min ?? 60,
+        focus: currentDayPlan.focus ?? "General Conditioning",
+        workout_note: currentDayPlan.workout_note,
+      },
+      { onConflict: "member_id,day" }
+    );
+    setIsSaving(false);
+
+    if (error) {
+      toast.error(`Could not save routine: ${error.message}`);
+      return;
+    }
+
     toast.success(`Saved ${activeDay} workout instructions for ${selectedMember.full_name}!`);
   };
 
@@ -108,9 +245,14 @@ export default function TrainerWorkoutManagementPage() {
             <select
               value={selectedMemberId}
               onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="bg-transparent text-text-primary font-bold focus:outline-none"
+              disabled={isLoadingMembers || members.length === 0}
+              className="bg-transparent text-text-primary font-bold focus:outline-none disabled:opacity-60"
             >
-              {fitcoreMembers.map((m) => (
+              {isLoadingMembers && <option className="bg-[#151B22]">Loading athletes...</option>}
+              {!isLoadingMembers && members.length === 0 && (
+                <option className="bg-[#151B22]">No athletes yet</option>
+              )}
+              {members.map((m) => (
                 <option key={m.id} value={m.id} className="bg-[#151B22] text-text-primary">
                   {m.full_name} ({m.fitness_goal})
                 </option>
@@ -122,6 +264,7 @@ export default function TrainerWorkoutManagementPage() {
             variant="primary"
             size="sm"
             onClick={handleSaveRoutine}
+            disabled={isSaving || isLoadingMembers || members.length === 0}
             className="shadow-lime-glow-sm flex items-center gap-1.5 font-bold"
           >
             <Save className="h-4 w-4" />
@@ -130,6 +273,32 @@ export default function TrainerWorkoutManagementPage() {
         </div>
       </div>
 
+      {members.length === 0 ? (
+        <Card className="p-10 flex flex-col items-center gap-3 text-center">
+          {isLoadingMembers ? (
+            <>
+              <Clock className="h-8 w-8 text-primary animate-pulse" />
+              <p className="text-sm text-text-muted">Loading your athletes...</p>
+            </>
+          ) : (
+            <>
+              <User className="h-8 w-8 text-primary" />
+              <h3 className="text-base font-bold text-text-primary">No athletes yet</h3>
+              <p className="text-xs text-text-muted max-w-sm">
+                Add members from your roster and they will appear here automatically for workout
+                programming.
+              </p>
+              <Link
+                href="/trainer/members"
+                className="text-xs font-bold text-primary hover:underline"
+              >
+                Go to Athlete Roster &rarr;
+              </Link>
+            </>
+          )}
+        </Card>
+      ) : (
+        <>
       {/* 7-Day Navigation Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
         {DAYS.map((day) => {
@@ -241,14 +410,17 @@ e.g.
               variant="primary"
               size="default"
               onClick={handleSaveRoutine}
+              disabled={isSaving}
               className="font-bold shadow-lime-glow-sm"
             >
               <Save className="h-4 w-4 mr-2" />
-              Save {activeDay}&apos;s Workout Note
+              {isSaving ? "Saving..." : `Save ${activeDay}'s Workout Note`}
             </Button>
           </div>
         </div>
       </Card>
+        </>
+      )}
     </TrainerShell>
   );
 }

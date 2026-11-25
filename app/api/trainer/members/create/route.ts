@@ -91,7 +91,9 @@ export async function POST(req: NextRequest) {
       id: memberId,
       full_name,
       phone: normalizedPhone,
-      email: email || null,
+      // Store the resolved login email (input email or generated fallback) so
+      // the phone -> email login fallback in /api/auth/member-lookup works.
+      email: resolvedEmail,
       date_of_birth: date_of_birth || null,
       gender: gender || null,
       address: address || null,

@@ -42,11 +42,6 @@ export default function ProgressPage() {
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar_url || ""}
-                      alt={member.full_name}
-                      className="h-11 w-11 rounded-2xl object-cover border border-primary/30 shrink-0"
-                    />
                     <div>
                       <h3 className="text-sm font-bold text-text-primary">
                         {member.full_name}

@@ -10,13 +10,12 @@ import { CalendarCheck, Check, X, Clock, AlertTriangle, UserCheck } from "lucide
 import { toast } from "sonner";
 
 export default function AttendancePage() {
-  const [attendanceState, setAttendanceState] = React.useState<Record<string, "present" | "absent" | "unmarked">>({
-    mem_01: "present",
-    mem_02: "present",
-    mem_03: "absent",
-    mem_04: "present",
-    mem_05: "unmarked",
-  });
+  const [attendanceState, setAttendanceState] = React.useState<Record<string, "present" | "absent" | "unmarked">>(
+    () =>
+      Object.fromEntries(
+        sampleMembers.map((m, i) => [m.id, i < 3 ? "present" : i === 3 ? "absent" : "unmarked"])
+      ) as Record<string, "present" | "absent" | "unmarked">
+  );
 
   const markAttendance = (memberId: string, status: "present" | "absent") => {
     setAttendanceState((prev) => ({ ...prev, [memberId]: status }));
@@ -45,7 +44,14 @@ export default function AttendancePage() {
 
         <div className="flex items-center gap-2 text-xs font-mono font-bold text-text-primary bg-[#151B22] border border-border px-3 py-2 rounded-xl">
           <CalendarCheck className="h-4 w-4 text-primary" />
-          <span>Saturday, Nov 22, 2026</span>
+          <span>
+            {new Intl.DateTimeFormat("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(new Date())}
+          </span>
         </div>
       </div>
 
@@ -69,11 +75,6 @@ export default function AttendancePage() {
                 className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#1C242D]/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src={member.avatar_url || ""}
-                    alt={member.full_name}
-                    className="h-10 w-10 rounded-xl object-cover border border-border shrink-0"
-                  />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-text-primary">

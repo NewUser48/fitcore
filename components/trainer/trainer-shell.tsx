@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fitcoreTrainer } from "@/lib/mock-data";
+import { useTrainerBadges } from "@/lib/supabase/use-trainer-badges";
 import { AddMemberDialog } from "@/components/trainer/add-member-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -38,17 +39,19 @@ interface TrainerShellProps {
 
 export const trainerNavItems = [
   { name: "Dashboard", href: "/trainer/dashboard", icon: LayoutDashboard },
-  { name: "Members", href: "/trainer/members", icon: Users, badge: "32" },
+  { name: "Members", href: "/trainer/members", icon: Users, badgeKey: "members" },
   { name: "Workout Management", href: "/trainer/workouts", icon: Dumbbell },
   { name: "Diet Management", href: "/trainer/diet", icon: UtensilsCrossed },
-  { name: "Attendance", href: "/trainer/attendance", icon: CalendarCheck, badge: "14/18" },
+  { name: "Attendance", href: "/trainer/attendance", icon: CalendarCheck, badgeKey: "attendance", absentKey: "attendanceAbsent" },
   { name: "Body Progress", href: "/trainer/progress", icon: TrendingUp },
-  { name: "Training Schedule", href: "/trainer/schedule", icon: Calendar, badge: "4 Today" },
+  { name: "Training Schedule", href: "/trainer/schedule", icon: Calendar, badgeKey: "schedule" },
   { name: "Memberships", href: "/trainer/memberships", icon: Layers },
-  { name: "Payments", href: "/trainer/payments", icon: CreditCard, badge: "2 Due" },
-  { name: "Notifications", href: "/trainer/notifications", icon: Bell, badge: "3" },
+  { name: "Payments", href: "/trainer/payments", icon: CreditCard, badgeKey: "payments" },
+  { name: "Notifications", href: "/trainer/notifications", icon: Bell, badgeKey: "notifications" },
   { name: "Settings", href: "/trainer/settings", icon: Settings },
-];
+] as const;
+
+type BadgeKey = "members" | "attendance" | "attendanceAbsent" | "schedule" | "payments" | "notifications";
 
 export function TrainerShell({ children }: TrainerShellProps) {
   const pathname = usePathname();
@@ -56,6 +59,21 @@ export function TrainerShell({ children }: TrainerShellProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = React.useState(false);
+  const badges = useTrainerBadges();
+
+  const navItems = React.useMemo(
+    () =>
+      trainerNavItems.map((item) => {
+        const badgeKey = "badgeKey" in item ? (item.badgeKey as BadgeKey) : undefined;
+        const absentKey = "absentKey" in item ? (item.absentKey as BadgeKey) : undefined;
+        return {
+          ...item,
+          badge: badgeKey ? badges[badgeKey] ?? undefined : undefined,
+          absentBadge: absentKey ? badges[absentKey] ?? undefined : undefined,
+        };
+      }),
+    [badges]
+  );
 
   const handleSignOut = () => {
     toast.success("Signed out of Trainer Account");
@@ -109,7 +127,7 @@ export function TrainerShell({ children }: TrainerShellProps) {
 
             {/* Navigation links */}
             <nav className="space-y-1 px-3 py-3">
-              {trainerNavItems.map((item) => {
+              {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/trainer/dashboard" && pathname?.startsWith(item.href));
                 const Icon = item.icon;
 
@@ -136,10 +154,16 @@ export function TrainerShell({ children }: TrainerShellProps) {
                       )}
                     />
                     {!collapsed && <span className="truncate text-xs">{item.name}</span>}
+                    {!collapsed && item.absentBadge && (
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        {item.absentBadge}
+                      </span>
+                    )}
                     {!collapsed && item.badge && (
                       <span
                         className={cn(
-                          "ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-md",
+                          "text-[10px] font-bold px-1.5 py-0.2 rounded-md",
+                          item.absentBadge ? "" : "ml-auto",
                           item.badge.includes("Due")
                             ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                             : isActive
@@ -300,7 +324,7 @@ export function TrainerShell({ children }: TrainerShellProps) {
           </button>
         </div>
         <nav className="p-3 space-y-1">
-          {trainerNavItems.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -317,6 +341,26 @@ export function TrainerShell({ children }: TrainerShellProps) {
               >
                 <Icon className="h-4 w-4" />
                 <span>{item.name}</span>
+                {item.absentBadge && (
+                  <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                    {item.absentBadge}
+                  </span>
+                )}
+                {item.badge && (
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                      item.absentBadge ? "" : "ml-auto",
+                      item.badge.includes("Due")
+                        ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                        : isActive
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "bg-[#242D37] text-text-muted"
+                    )}
+                  >
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

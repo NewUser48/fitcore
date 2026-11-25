@@ -5,23 +5,15 @@ import { MemberShell } from "@/components/member/member-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { sampleWeeklyDiet } from "@/lib/mock-data";
-import { DayOfWeek } from "@/types";
-import { UtensilsCrossed, Clock, CheckCircle2, Droplets, FileText } from "lucide-react";
-
-const DAYS: DayOfWeek[] = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+import { useMemberPortal } from "@/components/member/member-portal-provider";
+import { WEEK_DAYS, getTodayDayOfWeek } from "@/lib/utils";
+import { UtensilsCrossed, Clock, CheckCircle2, Droplets, FileText, Lock } from "lucide-react";
 
 export default function MemberDietPage() {
-  const [activeDay, setActiveDay] = React.useState<DayOfWeek>("Monday");
-  const diet = sampleWeeklyDiet.find((d) => d.day === activeDay) || sampleWeeklyDiet[0];
+  const { diet: dietPlans } = useMemberPortal();
+  // Members are restricted to the current date only.
+  const activeDay = getTodayDayOfWeek();
+  const diet = dietPlans.find((d) => d.day === activeDay) || dietPlans[0];
 
   return (
     <MemberShell>
@@ -33,31 +25,38 @@ export default function MemberDietPage() {
             </h1>
             <Badge variant="active">{activeDay}</Badge>
           </div>
-          <p className="text-xs text-text-muted mt-1">
-            Personalized meal instructions and hydration protocol for {activeDay}
+          <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
+            Personalized meal instructions and hydration protocol for today
+            <Lock className="h-3 w-3 text-primary" />
           </p>
         </div>
       </div>
 
-      {/* 7-Day Selector */}
+      {/* Today-only day strip (other days locked) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
-        {DAYS.map((day) => {
-          const d = sampleWeeklyDiet.find((item) => item.day === day);
-          const isSelected = activeDay === day;
+        {WEEK_DAYS.map((day) => {
+          const d = dietPlans.find((item) => item.day === day);
+          const isToday = activeDay === day;
 
           return (
-            <button
+            <div
               key={day}
-              onClick={() => setActiveDay(day)}
-              className={`p-3 rounded-2xl border text-left transition-all ${
-                isSelected
+              aria-disabled={!isToday}
+              title={isToday ? "Today" : "Locked — today only"}
+              className={`p-3 rounded-2xl border text-left select-none ${
+                isToday
                   ? "bg-[#1C242D] border-primary text-text-primary shadow-lime-glow-sm"
-                  : "bg-[#151B22] border-border text-text-muted hover:border-primary/40"
+                  : "bg-[#151B22] border-border/60 text-text-muted opacity-45 cursor-not-allowed"
               }`}
             >
-              <span className="text-xs font-bold block mb-1">{day}</span>
-              <p className="text-xs font-black text-primary font-mono">{d?.diet_title || "Daily Fuel"}</p>
-            </button>
+              <span className="text-xs font-bold mb-1 flex items-center justify-between">
+                {day}
+                {!isToday && <Lock className="h-3 w-3 text-text-dim" />}
+              </span>
+              <p className="text-xs font-black text-primary font-mono">
+                {isToday ? d?.diet_title || "Daily Fuel" : "Locked"}
+              </p>
+            </div>
           );
         })}
       </div>

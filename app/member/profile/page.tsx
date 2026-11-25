@@ -5,20 +5,48 @@ import { MemberShell } from "@/components/member/member-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fitcoreMembers, fitcoreTrainer } from "@/lib/mock-data";
+import { fitcoreTrainer } from "@/lib/mock-data";
+import { useMemberPortal } from "@/components/member/member-portal-provider";
 import { User, Phone, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MemberProfilePage() {
-  const member = fitcoreMembers[0];
+  const { member, saveMemberProfile } = useMemberPortal();
   const [phone, setPhone] = React.useState(member.phone);
   const [targetWeight, setTargetWeight] = React.useState(member.target_weight_kg || 78);
   const [emergencyName, setEmergencyName] = React.useState(member.emergency_contact_name || "");
   const [emergencyPhone, setEmergencyPhone] = React.useState(member.emergency_contact_phone || "");
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Profile preferences updated!");
+  React.useEffect(() => {
+    setPhone(member.phone);
+    setTargetWeight(member.target_weight_kg || 78);
+    setEmergencyName(member.emergency_contact_name || "");
+    setEmergencyPhone(member.emergency_contact_phone || "");
+  }, [
+    member.id,
+    member.phone,
+    member.target_weight_kg,
+    member.emergency_contact_name,
+    member.emergency_contact_phone,
+  ]);
+
+  const handleSave = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    setIsSaving(true);
+    try {
+      await saveMemberProfile({
+        phone,
+        target_weight_kg: targetWeight,
+        emergency_contact_name: emergencyName,
+        emergency_contact_phone: emergencyPhone,
+      });
+      toast.success("Profile preferences updated!");
+    } catch (err: any) {
+      toast.error(err?.message || "Could not save your profile.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -38,18 +66,13 @@ export default function MemberProfilePage() {
           </p>
         </div>
 
-        <Button onClick={handleSave} variant="primary" size="sm" className="shadow-lime-glow-sm">
-          <Save className="h-4 w-4 mr-1.5" /> Save Changes
+        <Button onClick={handleSave} variant="primary" size="sm" disabled={isSaving} className="shadow-lime-glow-sm">
+          <Save className="h-4 w-4 mr-1.5" /> {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6 flex flex-col items-center text-center">
-          <img
-            src={member.avatar_url || ""}
-            alt={member.full_name}
-            className="h-24 w-24 rounded-3xl object-cover border-2 border-primary shadow-lime-glow mb-4"
-          />
           <h2 className="text-base font-bold text-text-primary">{member.full_name}</h2>
           <p className="text-xs text-primary font-semibold mt-0.5">{member.fitness_goal}</p>
           <p className="text-xs text-text-muted mt-1">Coached by {fitcoreTrainer.name}</p>

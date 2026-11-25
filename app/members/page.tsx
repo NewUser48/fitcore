@@ -311,11 +311,6 @@ export default function MembersPage() {
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar_url || ""}
-                      alt={member.full_name}
-                      className="h-12 w-12 rounded-2xl object-cover border border-primary/30 group-hover:border-primary transition-colors shrink-0"
-                    />
                     <div>
                       <h3 className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
                         {member.full_name}
@@ -424,11 +419,6 @@ export default function MembersPage() {
                   >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={member.avatar_url || ""}
-                          alt={member.full_name}
-                          className="h-9 w-9 rounded-xl object-cover border border-border shrink-0"
-                        />
                         <div>
                           <p className="font-bold text-text-primary">
                             {member.full_name}

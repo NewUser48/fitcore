@@ -194,6 +194,12 @@ Please change your password after logging in.`;
         onMemberCreated(newMember);
       }
 
+      // Notify any mounted roster (including the one behind the shell-level
+      // dialog) so it refetches the newly created member from Supabase.
+      window.dispatchEvent(
+        new CustomEvent("fitcore:member-created", { detail: newMember })
+      );
+
       toast.success(`Athlete account created for ${formData.fullName}!`);
     } catch (err: any) {
       toast.error(err.message || "Failed to register member.");

@@ -54,11 +54,6 @@ export default function MemberProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
         <Card className="p-6 flex flex-col items-center text-center">
-          <img
-            src={member.avatar_url || ""}
-            alt={member.full_name}
-            className="h-24 w-24 rounded-3xl object-cover border-2 border-primary shadow-lime-glow mb-4"
-          />
           <h2 className="text-base font-bold text-text-primary">
             {member.full_name}
           </h2>

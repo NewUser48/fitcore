@@ -5,14 +5,9 @@ import { MemberShell } from "@/components/member/member-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  sampleWeeklyWorkouts,
-  sampleWeeklyDiet,
-  fitcoreMembers,
-  fitcoreTrainer,
-} from "@/lib/mock-data";
-import { DayOfWeek } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { fitcoreTrainer } from "@/lib/mock-data";
+import { useMemberPortal } from "@/components/member/member-portal-provider";
+import { WEEK_DAYS, formatDate, getTodayDayOfWeek, getTodayISODate } from "@/lib/utils";
 import {
   Flame,
   Dumbbell,
@@ -27,6 +22,7 @@ import {
   Sparkles,
   ArrowRight,
   FileText,
+  Lock,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -40,22 +36,24 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 
-const DAYS: DayOfWeek[] = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
 export default function MemberDashboardPage() {
-  const member = fitcoreMembers[0]; // Rohan Malhotra
+  const { member, workouts, diet, sessions, progress, todayStatus, logWorkoutComplete } =
+    useMemberPortal();
 
-  // Day-by-Day calendar selection (defaults to Monday / current day)
-  const [selectedDay, setSelectedDay] = React.useState<DayOfWeek>("Monday");
-  const [workoutCompleted, setWorkoutCompleted] = React.useState(false);
+  // Members are restricted to the current date only.
+  const selectedDay = getTodayDayOfWeek();
+  const workoutCompleted = todayStatus === "present";
+
+  const statusVariant: "active" | "expiring" | "expired" =
+    member.membership_status === "active"
+      ? "active"
+      : member.membership_status === "expiring"
+      ? "expiring"
+      : "expired";
+
+  const todaySession = sessions.find(
+    (s) => s.member_id === member.id && s.date === getTodayISODate()
+  );
 
   // State for hydration
   const [waterGlasses, setWaterGlasses] = React.useState(7);
@@ -77,23 +75,27 @@ export default function MemberDashboardPage() {
   }, [restTimer]);
 
   const currentWorkout =
-    sampleWeeklyWorkouts.find((w) => w.day === selectedDay) || sampleWeeklyWorkouts[0];
+    workouts.find((w) => w.day === selectedDay) || workouts[0];
   const currentDiet =
-    sampleWeeklyDiet.find((d) => d.day === selectedDay) || sampleWeeklyDiet[0];
+    diet.find((d) => d.day === selectedDay) || diet[0];
 
-  const handleFinishTodayWorkout = () => {
-    setWorkoutCompleted(true);
-    toast.success(`Outstanding effort, ${member.full_name.split(" ")[0]}! ${selectedDay}'s workout logged in FITCORE.`);
+  const handleFinishTodayWorkout = async () => {
+    try {
+      await logWorkoutComplete();
+      toast.success(`Outstanding effort, ${member.full_name.split(" ")[0]}! ${selectedDay}'s workout logged in FITCORE.`);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not log your workout.");
+    }
   };
 
-  const weightData = [
-    { date: "Jun", weight: 89.5 },
-    { date: "Jul", weight: 87.8 },
-    { date: "Aug", weight: 86.0 },
-    { date: "Sep", weight: 84.5 },
-    { date: "Oct", weight: 83.2 },
-    { date: "Nov", weight: 82.3 },
-  ];
+  const weightData = progress.map((p) => ({ date: p.date, weight: p.weight_kg }));
+
+  const weightChange =
+    progress.length > 1
+      ? `${(
+          progress[progress.length - 1].weight_kg - progress[0].weight_kg
+        ).toFixed(1)} kg total`
+      : null;
 
   return (
     <MemberShell>
@@ -103,21 +105,12 @@ export default function MemberDashboardPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <img
-                src={member.avatar_url || ""}
-                alt={member.full_name}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border-2 border-primary shadow-lime-glow-sm"
-              />
-              <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-[#151B22]" />
-            </div>
-
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="flex h-5 items-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 text-[10px] font-bold text-primary uppercase">
                   <Flame className="h-3 w-3" /> Athlete Portal
                 </span>
-                <Badge variant="active" dot>
+                <Badge variant={statusVariant} dot>
                   {member.membership_status}
                 </Badge>
               </div>
@@ -143,50 +136,48 @@ export default function MemberDashboardPage() {
         </div>
       </div>
 
-      {/* 2. DAY-BY-DAY 7-DAY NAVIGATION STRIP */}
+      {/* 2. TODAY-ONLY STRIP (OTHER DAYS LOCKED) */}
       <div className="mb-6">
-        <div className="flex items-center justify-between px-1 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 px-1 mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
-            Weekly Workout & Nutrition Schedule
+            Today&apos;s Plan &bull; {formatDate(new Date())}
           </span>
-          <span className="text-[11px] text-primary font-semibold">
-            Viewing: {selectedDay}
+          <span className="text-[11px] text-primary font-semibold flex items-center gap-1">
+            <Lock className="h-3 w-3" /> Members can view the current date only
           </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {DAYS.map((day) => {
-            const isSelected = selectedDay === day;
-            const dayWorkout = sampleWeeklyWorkouts.find((w) => w.day === day);
+          {WEEK_DAYS.map((day) => {
+            const isToday = selectedDay === day;
+            const dayWorkout = workouts.find((w) => w.day === day);
 
             return (
-              <button
+              <div
                 key={day}
-                onClick={() => {
-                  setSelectedDay(day);
-                  setWorkoutCompleted(false);
-                }}
-                className={`p-3 rounded-2xl border text-left transition-all duration-200 ${
-                  isSelected
+                aria-disabled={!isToday}
+                title={isToday ? "Today" : "Locked — today only"}
+                className={`p-3 rounded-2xl border text-left select-none ${
+                  isToday
                     ? "bg-[#1C242D] border-primary shadow-lime-glow-sm text-text-primary"
-                    : "bg-[#151B22] border-border/80 text-text-muted hover:border-primary/40 hover:text-text-primary"
+                    : "bg-[#151B22] border-border/60 text-text-muted opacity-45 cursor-not-allowed"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold">{day}</span>
-                  {dayWorkout?.is_rest_day ? (
-                    <span className="h-2 w-2 rounded-full bg-slate-500" />
+                  {isToday ? (
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   ) : (
-                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    <Lock className="h-3 w-3 text-text-dim" />
                   )}
                 </div>
                 <p className="text-[11px] font-semibold text-text-primary truncate">
-                  {dayWorkout?.workout_name || "Custom Split"}
+                  {isToday ? dayWorkout?.workout_name || "Custom Split" : "Locked"}
                 </p>
                 <span className="text-[9px] text-text-dim block mt-0.5">
-                  {dayWorkout?.is_rest_day ? "Rest Day" : "Training Note"}
+                  {isToday ? (dayWorkout?.is_rest_day ? "Rest Day" : "Training Note") : "Unavailable today"}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -335,38 +326,48 @@ export default function MemberDashboardPage() {
                 </div>
                 <h3 className="text-sm font-bold text-text-primary">My Weight Trajectory</h3>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-400">-7.2 kg total loss</span>
+              {weightChange && (
+                <span className="text-xs font-mono font-bold text-emerald-400">{weightChange}</span>
+              )}
             </div>
 
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weightData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid stroke="#242D37" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
-                  <YAxis domain={[75, 95]} stroke="#94A3B8" fontSize={10} tickLine={false} />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="p-2 rounded-lg bg-[#151B22] border border-border text-xs">
-                            <span className="text-text-muted">{label}:</span>{" "}
-                            <strong className="text-primary">{payload[0].value} kg</strong>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="#B8FF3B"
-                    strokeWidth={2.5}
-                    dot={{ fill: "#B8FF3B", r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {weightData.length > 1 ? (
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                    <CartesianGrid stroke="#242D37" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" stroke="#94A3B8" fontSize={10} tickLine={false} />
+                    <YAxis domain={["dataMin - 3", "dataMax + 3"]} stroke="#94A3B8" fontSize={10} tickLine={false} />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="p-2 rounded-lg bg-[#151B22] border border-border text-xs">
+                              <span className="text-text-muted">{label}:</span>{" "}
+                              <strong className="text-primary">{payload[0].value} kg</strong>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="#B8FF3B"
+                      strokeWidth={2.5}
+                      dot={{ fill: "#B8FF3B", r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-52 w-full flex flex-col items-center justify-center text-center gap-1">
+                <TrendingUp className="h-7 w-7 text-text-dim" />
+                <p className="text-xs font-semibold text-text-primary">No weigh-ins logged yet</p>
+                <p className="text-[11px] text-text-muted">Your trainer will log your body-weight progress here.</p>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
@@ -385,7 +386,7 @@ export default function MemberDashboardPage() {
                 <span className="text-[10px] uppercase font-bold text-primary">Subscription</span>
                 <h3 className="text-sm font-bold text-text-primary">{member.membership_plan_name}</h3>
               </div>
-              <Badge variant="active" dot>Active</Badge>
+              <Badge variant={statusVariant} dot>{member.membership_status}</Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs mb-3">
@@ -422,8 +423,16 @@ export default function MemberDashboardPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-[#151B22] border border-border text-xs mb-2">
-              <p className="font-mono font-bold text-primary">06:30 AM - 07:30 AM</p>
-              <p className="font-semibold text-text-primary mt-0.5">Posterior Chain & Deadlift Max Test</p>
+              {todaySession ? (
+                <>
+                  <p className="font-mono font-bold text-primary">
+                    {todaySession.start_time} - {todaySession.end_time}
+                  </p>
+                  <p className="font-semibold text-text-primary mt-0.5">{todaySession.title}</p>
+                </>
+              ) : (
+                <p className="text-text-muted">No 1-on-1 session booked for today.</p>
+              )}
             </div>
 
             <div className="text-right">

@@ -13,11 +13,11 @@ import {
   CreditCard,
   User,
   LogOut,
-  ArrowLeft,
   Sparkles,
 } from "lucide-react";
-import { fitcoreMembers, fitcoreTrainer } from "@/lib/mock-data";
-import { MemberProfile } from "@/types";
+import { fitcoreTrainer } from "@/lib/mock-data";
+import { useMemberPortal } from "@/components/member/member-portal-provider";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -29,11 +29,8 @@ export function MemberShell({ children }: MemberShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Local state for switching athlete preview
-  const [selectedMemberId, setSelectedMemberId] = React.useState<string>(fitcoreMembers[0].id);
-
-  const activeMember: MemberProfile =
-    fitcoreMembers.find((m) => m.id === selectedMemberId) || fitcoreMembers[0];
+  // Members can only view their own profile (no athlete switching).
+  const { member: activeMember } = useMemberPortal();
 
   const navItems = [
     { name: "Overview", href: "/member/dashboard", icon: LayoutDashboard },
@@ -44,7 +41,11 @@ export function MemberShell({ children }: MemberShellProps) {
     { name: "Membership", href: "/member/membership", icon: CreditCard },
   ];
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     toast.success("Signed out of Athlete Portal");
     router.push("/login");
   };
@@ -65,28 +66,9 @@ export function MemberShell({ children }: MemberShellProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-text-muted hidden md:inline">Switch Athlete:</span>
-            <select
-              value={selectedMemberId}
-              onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="h-7 rounded-lg border border-border bg-[#151B22] px-2 text-xs text-text-primary focus:outline-none focus:border-primary"
-            >
-              {fitcoreMembers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.full_name} ({m.membership_status})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Link
-            href="/trainer/dashboard"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#151B22] border border-border hover:border-primary/50 text-text-muted hover:text-text-primary text-[11px] font-semibold transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 text-primary" />
-            <span>Trainer Dashboard</span>
-          </Link>
+          <span className="text-[11px] text-text-muted">
+            Signed in as <strong className="text-text-primary">{activeMember.full_name}</strong>
+          </span>
         </div>
       </div>
 
@@ -135,12 +117,7 @@ export function MemberShell({ children }: MemberShellProps) {
             href="/member/profile"
             className="flex items-center gap-2.5 bg-[#151B22] border border-border/80 rounded-xl px-2.5 py-1 hover:border-primary/40 transition-colors"
           >
-            <img
-              src={activeMember.avatar_url || ""}
-              alt={activeMember.full_name}
-              className="h-7 w-7 rounded-lg object-cover border border-primary/30"
-            />
-            <div className="text-left hidden sm:block">
+            <div className="text-left">
               <p className="text-xs font-bold text-text-primary leading-none">
                 {activeMember.full_name}
               </p>

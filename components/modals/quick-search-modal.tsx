@@ -4,7 +4,7 @@ import * as React from "react";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Search, User, Dumbbell, Calendar, CreditCard, ArrowRight } from "lucide-react";
-import { sampleMembers } from "@/lib/mock-data";
+import { useTrainerMembers } from "@/lib/supabase/use-trainer-members";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,18 +16,19 @@ interface QuickSearchModalProps {
 export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
   const [query, setQuery] = React.useState("");
   const router = useRouter();
+  const { members } = useTrainerMembers();
 
   const filteredMembers = React.useMemo(() => {
-    if (!query.trim()) return sampleMembers.slice(0, 4);
+    if (!query.trim()) return members;
     const q = query.toLowerCase();
-    return sampleMembers.filter(
+    return members.filter(
       (m) =>
         m.full_name.toLowerCase().includes(q) ||
         m.phone.includes(q) ||
         m.fitness_goal.toLowerCase().includes(q) ||
         m.membership_plan_name?.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, members]);
 
   const quickNav = [
     { label: "Active Members Directory", href: "/members", icon: User },
@@ -79,11 +80,6 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
                   className="flex items-center justify-between p-2.5 rounded-xl bg-[#151B22] border border-border/70 hover:border-primary/50 hover:bg-[#1E2630] transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar_url || ""}
-                      alt={member.full_name}
-                      className="h-8 w-8 rounded-lg object-cover border border-border"
-                    />
                     <div>
                       <p className="text-xs font-bold text-text-primary group-hover:text-primary transition-colors">
                         {member.full_name}

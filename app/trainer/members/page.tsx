@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddMemberDialog } from "@/components/trainer/add-member-dialog";
-import { fitcoreMembers } from "@/lib/mock-data";
+import { EditMemberDialog } from "@/components/trainer/edit-member-dialog";
+import { DeleteMemberDialog } from "@/components/trainer/delete-member-dialog";
+import { useTrainerMembers } from "@/lib/supabase/use-trainer-members";
 import { MemberProfile } from "@/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import {
@@ -25,15 +27,20 @@ import {
   ShieldCheck,
   CheckCircle2,
   Lock,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function TrainerMembersPage() {
-  const [members, setMembers] = React.useState<MemberProfile[]>(fitcoreMembers);
+  const { members, setMembers, isLoading, reload } = useTrainerMembers();
   const [search, setSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [viewMode, setViewMode] = React.useState<"cards" | "table">("cards");
   const [isAddOpen, setIsAddOpen] = React.useState(false);
+  const [editingMember, setEditingMember] = React.useState<MemberProfile | null>(null);
+  const [deletingMember, setDeletingMember] = React.useState<MemberProfile | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const filteredMembers = React.useMemo(() => {
     return members.filter((m) => {
@@ -47,8 +54,39 @@ export default function TrainerMembersPage() {
   }, [members, search, statusFilter]);
 
   const handleMemberCreated = (newMember: MemberProfile) => {
-    setMembers((prev) => [newMember, ...prev]);
+    setMembers((prev) => [newMember, ...prev.filter((m) => m.id !== newMember.id)]);
     toast.success(`Enrolled & provisioned ${newMember.full_name}!`);
+    reload();
+  };
+
+  const handleMemberUpdated = (updated: MemberProfile) => {
+    setMembers((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+    window.dispatchEvent(new CustomEvent("fitcore:members-changed"));
+  };
+
+  const handleDeleteMember = async () => {
+    if (!deletingMember) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/trainer/members/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingMember.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete member");
+
+      const removedName = deletingMember.full_name;
+      setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
+      setDeletingMember(null);
+      toast.success(`${removedName} removed from the roster.`);
+      window.dispatchEvent(new CustomEvent("fitcore:members-changed"));
+      reload();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete member.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleExportCSV = () => {
@@ -103,7 +141,7 @@ export default function TrainerMembersPage() {
               Athlete Roster Management
             </h1>
             <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
-              {filteredMembers.length} Athletes
+              {isLoading ? "…" : filteredMembers.length} Athletes
             </span>
           </div>
           <p className="text-xs text-text-muted mt-1">
@@ -176,18 +214,15 @@ export default function TrainerMembersPage() {
       </Card>
 
       {/* Roster View */}
-      {viewMode === "cards" ? (
+      {isLoading ? (
+        <Card className="p-10 text-center text-sm text-text-muted">Loading athletes…</Card>
+      ) : viewMode === "cards" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredMembers.map((member) => (
             <Card key={member.id} glowOnHover className="p-5 flex flex-col justify-between">
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar_url || ""}
-                      alt={member.full_name}
-                      className="h-12 w-12 rounded-2xl object-cover border border-primary/30"
-                    />
                     <div>
                       <h3 className="text-sm font-bold text-text-primary">
                         {member.full_name}
@@ -235,7 +270,22 @@ export default function TrainerMembersPage() {
 
               <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
                 <span className="text-text-muted text-[11px]">Emergency: {member.emergency_contact_phone || "N/A"}</span>
-                <span className="text-primary font-semibold">Managed</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setEditingMember(member)}
+                    className="p-1.5 rounded-lg border border-border text-text-muted hover:text-primary hover:border-primary/50 transition-colors"
+                    title="Edit member"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingMember(member)}
+                    className="p-1.5 rounded-lg border border-border text-text-muted hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                    title="Delete member"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </Card>
           ))}
@@ -253,6 +303,7 @@ export default function TrainerMembersPage() {
                   <th className="py-3 px-4">Plan & Expiry</th>
                   <th className="py-3 px-4">Current Weight</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -260,11 +311,6 @@ export default function TrainerMembersPage() {
                   <tr key={member.id} className="hover:bg-[#1E2630] transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={member.avatar_url || ""}
-                          alt={member.full_name}
-                          className="h-8 w-8 rounded-xl object-cover border border-border"
-                        />
                         <div>
                           <p className="font-bold text-text-primary">{member.full_name}</p>
                           <p className="text-[10px] text-text-muted">{member.email}</p>
@@ -289,6 +335,24 @@ export default function TrainerMembersPage() {
                         {member.membership_status}
                       </Badge>
                     </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setEditingMember(member)}
+                          className="p-1.5 rounded-lg border border-border text-text-muted hover:text-primary hover:border-primary/50 transition-colors"
+                          title="Edit member"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingMember(member)}
+                          className="p-1.5 rounded-lg border border-border text-text-muted hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                          title="Delete member"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -302,6 +366,23 @@ export default function TrainerMembersPage() {
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onMemberCreated={handleMemberCreated}
+      />
+
+      {/* Edit Member Dialog */}
+      <EditMemberDialog
+        member={editingMember}
+        isOpen={!!editingMember}
+        onClose={() => setEditingMember(null)}
+        onMemberUpdated={handleMemberUpdated}
+      />
+
+      {/* Delete Member Dialog */}
+      <DeleteMemberDialog
+        isOpen={!!deletingMember}
+        memberName={deletingMember?.full_name}
+        isDeleting={isDeleting}
+        onCancel={() => setDeletingMember(null)}
+        onConfirm={handleDeleteMember}
       />
     </TrainerShell>
   );

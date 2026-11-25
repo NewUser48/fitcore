@@ -131,12 +131,7 @@ export function PortalShell({ children }: PortalShellProps) {
         {/* Member Profile Avatar & Mobile Toggle */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5 bg-[#151B22] border border-border/80 rounded-xl px-2.5 py-1.5">
-            <img
-              src={currentMember.avatar_url || ""}
-              alt={currentMember.full_name}
-              className="h-7 w-7 rounded-lg object-cover border border-primary/30"
-            />
-            <div className="text-left hidden sm:block">
+            <div className="text-left">
               <p className="text-xs font-bold text-text-primary leading-none">
                 {currentMember.full_name}
               </p>

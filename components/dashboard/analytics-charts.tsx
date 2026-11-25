@@ -19,13 +19,10 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  sampleMembershipGrowth,
   sampleRevenueChart,
   sampleAttendanceTrends,
-  sampleMembers,
 } from "@/lib/mock-data";
-import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, BarChart2, Calendar, PieChart as PieIcon } from "lucide-react";
+import { useTrainerMembers } from "@/lib/supabase/use-trainer-members";
 
 // Custom dark tooltip for Recharts
 function CustomTooltip({ active, payload, label, prefix = "", suffix = "" }: any) {
@@ -57,10 +54,55 @@ function CustomTooltip({ active, payload, label, prefix = "", suffix = "" }: any
 
 export function AnalyticsCharts() {
   const [mounted, setMounted] = React.useState(false);
+  const { members } = useTrainerMembers();
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const statusDonutData = React.useMemo(() => {
+    const activeCount = members.filter((m) => m.membership_status === "active").length;
+    const expiringCount = members.filter((m) => m.membership_status === "expiring").length;
+    const expiredCount = members.filter(
+      (m) => m.membership_status === "expired" || m.membership_status === "inactive"
+    ).length;
+
+    return [
+      { name: "Active", value: activeCount, color: "#10B981" },
+      { name: "Expiring Soon", value: expiringCount, color: "#F97316" },
+      { name: "Expired / Due", value: expiredCount, color: "#EF4444" },
+    ];
+  }, [members]);
+
+  const growthData = React.useMemo(() => {
+    const now = new Date();
+    const points: { month: string; total: number; active: number }[] = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+      const enrolled = members.filter((m) => {
+        if (!m.created_at) return false;
+        return new Date(m.created_at) <= monthEnd;
+      });
+
+      points.push({
+        month: monthEnd.toLocaleString("en-US", { month: "short" }),
+        total: enrolled.length,
+        active: enrolled.filter((m) => m.membership_status === "active").length,
+      });
+    }
+
+    return points;
+  }, [members]);
+
+  const growthPercent =
+    growthData[0]?.total > 0
+      ? Math.round(
+          ((growthData[growthData.length - 1].total - growthData[0].total) /
+            growthData[0].total) *
+            100
+        )
+      : 0;
 
   if (!mounted) {
     return (
@@ -72,17 +114,6 @@ export function AnalyticsCharts() {
       </div>
     );
   }
-
-  // Calculate status counts for donut chart
-  const activeCount = sampleMembers.filter((m) => m.membership_status === "active").length;
-  const expiringCount = sampleMembers.filter((m) => m.membership_status === "expiring").length;
-  const expiredCount = sampleMembers.filter((m) => m.membership_status === "expired").length;
-
-  const statusDonutData = [
-    { name: "Active", value: activeCount, color: "#10B981" },
-    { name: "Expiring Soon", value: expiringCount, color: "#F97316" },
-    { name: "Expired / Due", value: expiredCount, color: "#EF4444" },
-  ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-6">
@@ -139,7 +170,8 @@ export function AnalyticsCharts() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-text-primary">Roster Growth</span>
               <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                +128% 6 Mo
+                {growthPercent >= 0 ? "+" : ""}
+                {growthPercent}% 6 Mo
               </span>
             </div>
             <p className="text-xs text-text-muted mt-0.5">
@@ -158,7 +190,7 @@ export function AnalyticsCharts() {
 
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sampleMembershipGrowth} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <LineChart data={growthData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
               <CartesianGrid stroke="#242D37" strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} />
               <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} />

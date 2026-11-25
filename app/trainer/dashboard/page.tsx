@@ -3,7 +3,6 @@
 import * as React from "react";
 import { TrainerShell } from "@/components/trainer/trainer-shell";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
 import { TodayScheduleWidget } from "@/components/dashboard/today-schedule";
@@ -12,7 +11,9 @@ import { RecentPaymentsWidget } from "@/components/dashboard/recent-payments";
 import { AttentionWidget } from "@/components/dashboard/attention-widget";
 import { ActivityFeedWidget } from "@/components/dashboard/activity-feed";
 import { QuickActions } from "@/components/dashboard/quick-actions";
-import { sampleDashboardKpis } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
+import { useTrainerMembers } from "@/lib/supabase/use-trainer-members";
+import { getTodayISODate } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 import {
   Users,
@@ -22,62 +23,140 @@ import {
   AlertCircle,
   IndianRupee,
   Clock,
-  ArrowUpRight,
   Flame,
   Plus,
 } from "lucide-react";
 import { AddMemberDialog } from "@/components/trainer/add-member-dialog";
 
+interface PaymentSummaryRow {
+  amount: number | null;
+  status: string;
+  payment_date: string | null;
+}
+
+const TODAY = getTodayISODate();
+
 export default function TrainerDashboardPage() {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
+  const { members, isLoading } = useTrainerMembers();
+  const [presentToday, setPresentToday] = React.useState(0);
+  const [payments, setPayments] = React.useState<PaymentSummaryRow[]>([]);
+  const [programmedMemberIds, setProgrammedMemberIds] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    let active = true;
+    (async () => {
+      const [{ data: attendance }, { data: paymentRows }, { data: plans }] = await Promise.all([
+        supabase.from("attendance").select("member_id, status").eq("date", TODAY),
+        supabase.from("payments").select("amount, status, payment_date"),
+        supabase.from("workout_plans").select("member_id"),
+      ]);
+
+      if (!active) return;
+
+      setPresentToday(
+        (attendance ?? []).filter((row: any) => row.status === "present").length
+      );
+      setPayments((paymentRows ?? []) as PaymentSummaryRow[]);
+      setProgrammedMemberIds(
+        Array.from(new Set((plans ?? []).map((row: any) => row.member_id as string)))
+      );
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const totalMembers = members.length;
+  const activeMembers = members.filter((m) => m.membership_status === "active").length;
+  const expiringMembers = members.filter(
+    (m) => m.membership_status === "expiring" || m.membership_status === "expired"
+  ).length;
+
+  const complianceRate = totalMembers
+    ? Math.round((presentToday / totalMembers) * 100)
+    : 0;
+  const retentionRate = totalMembers
+    ? Math.round((activeMembers / totalMembers) * 100)
+    : 0;
+
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const newThisMonth = members.filter((m) =>
+    m.created_at?.startsWith(currentMonth)
+  ).length;
+
+  const pendingPayments = payments.filter((p) => {
+    const status = p.status.toLowerCase();
+    return status === "pending" || status === "overdue";
+  });
+  const pendingPaymentsAmount = pendingPayments.reduce(
+    (sum, p) => sum + Number(p.amount ?? 0),
+    0
+  );
+
+  const monthlyRevenue = payments
+    .filter(
+      (p) =>
+        p.status.toLowerCase() === "paid" &&
+        p.payment_date?.startsWith(currentMonth)
+    )
+    .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+
+  const value = (loading: boolean, content: React.ReactNode) => (loading ? "…" : content);
 
   const kpis = [
     {
       title: "Total Members",
-      value: sampleDashboardKpis.totalMembers,
-      subtext: "+4 enrolled this month",
+      value: value(isLoading, totalMembers),
+      subtext: `${newThisMonth} enrolled this month`,
       icon: Users,
       accent: "text-primary bg-primary/10 border-primary/20",
     },
     {
       title: "Active Members",
-      value: sampleDashboardKpis.activeMembers,
-      subtext: "90.6% active retention",
+      value: value(isLoading, activeMembers),
+      subtext: `${retentionRate}% active retention`,
       icon: UserCheck,
       accent: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {
       title: "Today's Attendance",
-      value: `${sampleDashboardKpis.todayAttendance.present} / ${sampleDashboardKpis.todayAttendance.expected}`,
-      subtext: `${sampleDashboardKpis.todayAttendance.rate}% compliance rate`,
+      value: value(isLoading, `${presentToday} / ${totalMembers}`),
+      subtext: `${complianceRate}% compliance rate`,
       icon: CalendarCheck,
       accent: "text-sky-400 bg-sky-500/10 border-sky-500/20",
     },
     {
       title: "Active Workout Plans",
-      value: sampleDashboardKpis.activeWorkoutPlans,
-      subtext: "Assigned routines active",
+      value: value(isLoading, programmedMemberIds.length),
+      subtext: "Athletes with assigned routines",
       icon: Dumbbell,
       accent: "text-purple-400 bg-purple-500/10 border-purple-500/20",
     },
     {
       title: "Pending Payments",
-      value: formatCurrency(sampleDashboardKpis.pendingPaymentsAmount),
-      subtext: `${sampleDashboardKpis.pendingPaymentsCount} member balances`,
+      value: value(isLoading, formatCurrency(pendingPaymentsAmount)),
+      subtext: `${pendingPayments.length} member balances`,
       icon: AlertCircle,
       accent: "text-rose-400 bg-rose-500/10 border-rose-500/20",
     },
     {
       title: "Monthly Revenue",
-      value: formatCurrency(sampleDashboardKpis.monthlyRevenue),
-      subtext: "+14.2% vs October",
+      value: value(isLoading, formatCurrency(monthlyRevenue)),
+      subtext: "Collected this month",
       icon: IndianRupee,
       accent: "text-primary bg-primary/10 border-primary/20",
     },
     {
       title: "Expiring Memberships",
-      value: sampleDashboardKpis.expiringMemberships,
-      subtext: "Next 7 days renewal",
+      value: value(isLoading, expiringMembers),
+      subtext: "Requires renewal attention",
       icon: Clock,
       accent: "text-orange-400 bg-orange-500/10 border-orange-500/20",
     },

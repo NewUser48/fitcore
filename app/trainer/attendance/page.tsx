@@ -1,25 +1,82 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { TrainerShell } from "@/components/trainer/trainer-shell";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fitcoreMembers } from "@/lib/mock-data";
-import { CalendarCheck, Check, X, Clock, UserCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useTrainerMembers } from "@/lib/supabase/use-trainer-members";
+import { getTodayISODate } from "@/lib/utils";
+import { CalendarCheck, Check, X, User } from "lucide-react";
 import { toast } from "sonner";
 
-export default function TrainerAttendancePage() {
-  const [attendance, setAttendance] = React.useState<Record<string, "present" | "absent">>({
-    mem_rohan_01: "present",
-    mem_kavita_02: "present",
-    mem_arjun_03: "absent",
-    mem_priya_04: "present",
-  });
+type AttendanceStatus = "present" | "absent";
 
-  const mark = (id: string, status: "present" | "absent") => {
-    setAttendance((prev) => ({ ...prev, [id]: status }));
-    toast.success(`Marked as ${status}`);
+const TODAY = getTodayISODate();
+
+export default function TrainerAttendancePage() {
+  const { members, isLoading } = useTrainerMembers();
+  const [attendance, setAttendance] = React.useState<Record<string, AttendanceStatus>>({});
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("member_id, status")
+        .eq("date", TODAY);
+
+      if (!active) return;
+
+      if (error) {
+        toast.error(`Could not load today's attendance: ${error.message}`);
+        return;
+      }
+
+      setAttendance(
+        Object.fromEntries(
+          (data ?? [])
+            .filter((row: any) => row.status === "present" || row.status === "absent")
+            .map((row: any) => [row.member_id, row.status as AttendanceStatus])
+        )
+      );
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const mark = async (memberId: string, memberName: string, status: AttendanceStatus) => {
+    setAttendance((prev) => ({ ...prev, [memberId]: status }));
+
+    const supabase = createClient();
+    if (!supabase) {
+      toast.success(`${memberName} marked as ${status}`);
+      return;
+    }
+
+    const { error } = await supabase.from("attendance").upsert(
+      {
+        member_id: memberId,
+        date: TODAY,
+        status,
+        check_in_time: new Date().toTimeString().slice(0, 8),
+      },
+      { onConflict: "member_id,date" }
+    );
+
+    if (error) {
+      toast.error(`Could not save attendance: ${error.message}`);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent("fitcore:attendance-changed"));
+    toast.success(`${memberName} marked as ${status}`);
   };
 
   const presentCount = Object.values(attendance).filter((s) => s === "present").length;
@@ -33,7 +90,7 @@ export default function TrainerAttendancePage() {
               Daily Attendance Roster
             </h1>
             <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
-              {presentCount} / {fitcoreMembers.length} Present Today
+              {isLoading ? "…" : `${presentCount} / ${members.length}`} Present Today
             </span>
           </div>
           <p className="text-xs text-text-muted mt-1">
@@ -43,7 +100,14 @@ export default function TrainerAttendancePage() {
 
         <div className="flex items-center gap-2 text-xs font-mono font-bold text-text-primary bg-[#151B22] border border-border px-3 py-2 rounded-xl">
           <CalendarCheck className="h-4 w-4 text-primary" />
-          <span>Saturday, Nov 22, 2026</span>
+          <span>
+            {new Intl.DateTimeFormat("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(new Date())}
+          </span>
         </div>
       </div>
 
@@ -55,56 +119,66 @@ export default function TrainerAttendancePage() {
           <span className="text-xs text-text-dim">One check-in per member per date</span>
         </div>
 
-        <div className="divide-y divide-border/60">
-          {fitcoreMembers.map((member) => {
-            const status = attendance[member.id] || "unmarked";
+        {isLoading ? (
+          <div className="p-8 text-center text-sm text-text-muted">Loading athletes…</div>
+        ) : members.length === 0 ? (
+          <div className="p-10 flex flex-col items-center gap-3 text-center">
+            <User className="h-8 w-8 text-primary" />
+            <h3 className="text-base font-bold text-text-primary">No athletes yet</h3>
+            <p className="text-xs text-text-muted max-w-sm">
+              Add members from your roster and they will appear here for daily check-ins.
+            </p>
+            <Link href="/trainer/members" className="text-xs font-bold text-primary hover:underline">
+              Go to Athlete Roster &rarr;
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {members.map((member) => {
+              const status = attendance[member.id];
 
-            return (
-              <div
-                key={member.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#1C242D]/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src={member.avatar_url || ""}
-                    alt={member.full_name}
-                    className="h-10 w-10 rounded-xl object-cover border border-border shrink-0"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-text-primary">{member.full_name}</span>
-                      <span className="text-[10px] text-primary font-mono">{member.phone}</span>
+              return (
+                <div
+                  key={member.id}
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#1C242D]/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-text-primary">{member.full_name}</span>
+                        <span className="text-[10px] text-primary font-mono">{member.phone}</span>
+                      </div>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        Goal: {member.fitness_goal} &bull; {member.membership_plan_name}
+                      </p>
                     </div>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      Goal: {member.fitness_goal} &bull; {member.membership_plan_name}
-                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <Button
+                      variant={status === "present" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => mark(member.id, member.full_name, "present")}
+                      className="h-8 px-3 text-xs flex items-center gap-1"
+                    >
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      <span>Present</span>
+                    </Button>
+                    <Button
+                      variant={status === "absent" ? "danger" : "outline"}
+                      size="sm"
+                      onClick={() => mark(member.id, member.full_name, "absent")}
+                      className="h-8 px-3 text-xs flex items-center gap-1"
+                    >
+                      <X className="h-3.5 w-3.5 stroke-[3]" />
+                      <span>Absent</span>
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Button
-                    variant={status === "present" ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => mark(member.id, "present")}
-                    className="h-8 px-3 text-xs flex items-center gap-1"
-                  >
-                    <Check className="h-3.5 w-3.5 stroke-[3]" />
-                    <span>Present</span>
-                  </Button>
-                  <Button
-                    variant={status === "absent" ? "danger" : "outline"}
-                    size="sm"
-                    onClick={() => mark(member.id, "absent")}
-                    className="h-8 px-3 text-xs flex items-center gap-1"
-                  >
-                    <X className="h-3.5 w-3.5 stroke-[3]" />
-                    <span>Absent</span>
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </TrainerShell>
   );
